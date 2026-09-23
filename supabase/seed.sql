@@ -106,3 +106,99 @@ insert into public.quote_events (quote_id, type, occurred_at) values
   ('00000000-0000-4000-8000-0000000e0004', 'sent',     '2026-08-25 16:30-05'),
   ('00000000-0000-4000-8000-0000000e0004', 'accepted', '2026-08-27 12:15-05'),
   ('00000000-0000-4000-8000-0000000e0005', 'sent',     '2026-08-10 10:00-05');
+
+-- ── Textos de las páginas internas (quotes.copy) ─────────────
+update public.quotes set copy = $j${
+  "intro": {"heading": "Hola Mariana. Esto es", "accent": "lo que proponemos.",
+    "body": "Café Aurora ya vende bien en su tienda física. El siguiente paso es vender en línea sin depender de nadie para cada cambio. Proponemos Shopify: cinco páginas, catálogo ordenado y pagos integrados. El precio es cerrado y se paga en dos partes iguales."},
+  "highlights": [
+    {"title": "Precio cerrado", "body": "Sabes desde el inicio cuánto inviertes. Sin horas extra ni sorpresas."},
+    {"title": "Autonomía total", "body": "Tu equipo actualiza productos y precios sin escribirnos."},
+    {"title": "Comunicación directa", "body": "Hablas con quien diseña y desarrolla, por WhatsApp."}],
+  "includes": ["Home, catálogo, producto, nosotros y contacto", "Integración de pasarela de pagos", "Borradores de textos legales", "Capacitación de una hora para tu equipo"],
+  "excludes": ["Fotografía de producto", "Mensualidad de Shopify", "Dominio"],
+  "notes": ["Shopify cobra una comisión del 2% por venta si no usas Shopify Payments.", "Las pasarelas de pago cobran cerca del 3% por transacción."],
+  "process": [
+    {"title": "Descubrimiento", "body": "Una reunión para entender el catálogo y cómo compran tus clientes."},
+    {"title": "Diseño", "body": "Te mostramos la tienda completa antes de construirla."},
+    {"title": "Desarrollo", "body": "Construimos, cargamos productos y conectamos pagos."},
+    {"title": "Entrega", "body": "Publicamos, capacitamos a tu equipo y quedas en control."}],
+  "closing": {"heading": "Gracias, Mariana.", "accent": "Cuando digas, arrancamos.",
+    "body": "Si quieres ajustar el alcance o revisar la inversión, escríbenos y lo resolvemos en una conversación."}
+}$j$::jsonb where public_slug = 'demo-cafe-aurora';
+
+update public.quotes set copy = $j${
+  "intro": {"heading": "Hola Andrés. Sus proyectos", "accent": "merecen una vitrina así.",
+    "body": "Estudio Norte tiene obra que habla por sí sola. Proponemos un portafolio en Framer: seis páginas, rápido de cargar y fácil de actualizar cada vez que terminen un proyecto."},
+  "highlights": [
+    {"title": "Precio cerrado", "body": "Una inversión fija, en dos pagos iguales."},
+    {"title": "Ustedes actualizan", "body": "Suben un proyecto nuevo en minutos, sin tocar código."},
+    {"title": "Rápido de verdad", "body": "Imágenes grandes que cargan rápido en cualquier dispositivo."}],
+  "includes": ["Seis páginas: inicio, proyectos, detalle, estudio, prensa y contacto", "Plantilla reutilizable para cada proyecto", "SEO básico y formulario de contacto"],
+  "excludes": ["Fotografía y renders", "Mensualidad de Framer", "Dominio"],
+  "notes": ["Si el alcance crece, cada página adicional cuesta 90 USD."],
+  "process": [
+    {"title": "Selección", "body": "Elegimos juntos los proyectos que abren el portafolio."},
+    {"title": "Diseño", "body": "Diseñamos las seis páginas y las revisan antes de construir."},
+    {"title": "Construcción", "body": "Montamos el sitio en Framer con su contenido real."},
+    {"title": "Entrega", "body": "Publicamos y les mostramos cómo agregar proyectos."}],
+  "closing": {"heading": "Gracias, Andrés.", "accent": "Empezamos cuando digan.",
+    "body": "Cualquier ajuste al alcance lo resolvemos antes de arrancar."}
+}$j$::jsonb where public_slug = 'demo-estudio-norte';
+
+update public.quotes set copy = $j${
+  "intro": {"heading": "Hola Laura y Tomás. Una página", "accent": "que llena la agenda.",
+    "body": "Veranda Dental recibe visitas pero pocas citas en línea. Proponemos una landing enfocada en una sola acción: agendar. Cobramos por horas, con un techo claro de 24 horas."},
+  "highlights": [
+    {"title": "Techo claro", "body": "Nunca pagan más de 24 horas, aunque tardemos más."},
+    {"title": "Una sola meta", "body": "Cada sección empuja al paciente a agendar."},
+    {"title": "Integración real", "body": "Conectada al calendario que ya usa la clínica."}],
+  "includes": ["Landing de una página", "Integración con el calendario de la clínica", "Formulario de agendamiento", "Medición de citas agendadas"],
+  "excludes": ["Fotografía", "Pauta publicitaria"],
+  "notes": ["Se facturan las horas trabajadas, con un máximo de 24."],
+  "process": [
+    {"title": "Diagnóstico", "body": "Revisamos cómo llegan hoy los pacientes."},
+    {"title": "Diseño", "body": "Una propuesta de la página completa en tres días."},
+    {"title": "Integración", "body": "Conectamos agenda, formulario y medición."},
+    {"title": "Entrega", "body": "Publicamos y revisamos los primeros resultados con ustedes."}],
+  "closing": {"heading": "Gracias, Laura y Tomás.", "accent": "Hablemos cuando quieran.",
+    "body": "Si quieren ajustar el alcance, lo resolvemos en una llamada corta."}
+}$j$::jsonb where public_slug = 'demo-veranda-dental';
+
+update public.quotes set copy = $j${
+  "intro": {"heading": "Hola Valentina. Contenido", "accent": "con criterio, cada mes.",
+    "body": "Tallo tiene una marca clara y un público que la sigue. Proponemos acompañarte mes a mes para que cada publicación sume. Sin permanencia: te quedas porque funciona."},
+  "highlights": [
+    {"title": "Precio fijo mensual", "body": "Una tarifa predecible, sin contratos largos."},
+    {"title": "Salida libre", "body": "Puedes pausar o terminar con un mes de aviso."},
+    {"title": "Entregables reales", "body": "Un contenido listo para publicar cada semana."}],
+  "includes": ["Cuatro sesiones de asesoría al mes", "Un entregable de contenido por semana", "Revisión de métricas mensual"],
+  "excludes": ["Pauta publicitaria", "Producción de video"],
+  "notes": ["Las horas fuera del plan se cobran a $150.000 COP cada una, solo si las pides."],
+  "process": [
+    {"title": "Diagnóstico", "body": "Revisamos qué publica Tallo hoy y qué funciona."},
+    {"title": "Plan del mes", "body": "Definimos temas y formatos en la primera sesión."},
+    {"title": "Producción", "body": "Entregamos un contenido cada semana."},
+    {"title": "Revisión", "body": "Cerramos el mes con métricas y ajustes."}],
+  "closing": {"heading": "Gracias, Valentina.", "accent": "Empezamos el próximo mes.",
+    "body": "Escríbenos y agendamos la primera sesión."}
+}$j$::jsonb where public_slug = 'demo-tallo';
+
+update public.quotes set copy = $j${
+  "intro": {"heading": "Hola Camilo. Sus clientes,", "accent": "siempre al día.",
+    "body": "Nodo Legal responde muchas veces la misma pregunta: cómo va mi caso. Proponemos un portal privado donde cada cliente lo consulta solo. Un precio base y módulos a la medida."},
+  "highlights": [
+    {"title": "Menos llamadas", "body": "El cliente consulta el estado de su caso cuando quiera."},
+    {"title": "Datos protegidos", "body": "Cada cliente ve solo su información."},
+    {"title": "Crece por módulos", "body": "Agregan funciones cuando las necesiten."}],
+  "includes": ["Acceso privado por cliente", "Estado de casos y documentos", "Panel para el equipo de la firma"],
+  "excludes": ["Migración de datos históricos", "Soporte fuera de horario"],
+  "notes": ["La infraestructura cuesta cerca de 40 USD al mes y se paga directo a los proveedores."],
+  "process": [
+    {"title": "Mapeo", "body": "Entendemos cómo avanza un caso dentro de la firma."},
+    {"title": "Diseño", "body": "Prototipo navegable del portal para validar."},
+    {"title": "Desarrollo", "body": "Construimos el portal y los módulos elegidos."},
+    {"title": "Entrega", "body": "Capacitamos al equipo y activamos los primeros clientes."}],
+  "closing": {"heading": "Gracias, Camilo.", "accent": "Lo construimos juntos.",
+    "body": "Si quieren revisar los módulos, lo hablamos antes de arrancar."}
+}$j$::jsonb where public_slug = 'demo-nodo-legal';

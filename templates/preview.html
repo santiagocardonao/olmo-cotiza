@@ -9,21 +9,25 @@
   <main id="doc"></main>
 
   <script type="module">
-    // Vista previa de desarrollo: lee una cotización de la demo desde
-    // Supabase (clave publicable; RLS solo expone la organización demo).
-    import { renderCover } from "./cover.js";
+    // Vista previa de desarrollo: pide una cotización por su enlace
+    // público (get_public_quote) y la renderiza completa.
+    import { renderProposal } from "./proposal.js";
 
     const SUPABASE_URL = "https://dxukpgcsodrbktkhcutk.supabase.co";
     const PUBLISHABLE_KEY = "sb_publishable_CEmVnMfD_9QBOXGWP99nmQ_fUrAcplJ";
 
     const slug = new URLSearchParams(location.search).get("q") ?? "demo-cafe-aurora";
-    const url = `${SUPABASE_URL}/rest/v1/quotes?public_slug=eq.${encodeURIComponent(slug)}&select=*,clients(name)`;
-    const res = await fetch(url, { headers: { apikey: PUBLISHABLE_KEY } });
-    const [quote] = await res.json();
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_quote`, {
+      method: "POST",
+      headers: { apikey: PUBLISHABLE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ slug }),
+    });
+    const data = await res.json();
 
-    document.getElementById("doc").innerHTML = quote
-      ? renderCover(quote)
+    document.getElementById("doc").innerHTML = data
+      ? renderProposal(data)
       : `<p style="text-align:center">No existe la cotización “${slug}”.</p>`;
+    document.title = data ? `Propuesta · ${data.client.name}` : "No encontrada";
   </script>
 </body>
 </html>
