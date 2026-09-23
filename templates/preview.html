@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Vista previa · Propuesta</title>
+  <link rel="stylesheet" href="./proposal.css">
+</head>
+<body>
+  <main id="doc"></main>
+
+  <script type="module">
+    // Vista previa de desarrollo: lee una cotización de la demo desde
+    // Supabase (clave publicable; RLS solo expone la organización demo).
+    import { renderCover } from "./cover.js";
+
+    const SUPABASE_URL = "https://dxukpgcsodrbktkhcutk.supabase.co";
+    const PUBLISHABLE_KEY = "sb_publishable_CEmVnMfD_9QBOXGWP99nmQ_fUrAcplJ";
+
+    const slug = new URLSearchParams(location.search).get("q") ?? "demo-cafe-aurora";
+    const url = `${SUPABASE_URL}/rest/v1/quotes?public_slug=eq.${encodeURIComponent(slug)}&select=*,clients(name)`;
+    const res = await fetch(url, { headers: { apikey: PUBLISHABLE_KEY } });
+    const [quote] = await res.json();
+
+    document.getElementById("doc").innerHTML = quote
+      ? renderCover(quote)
+      : `<p style="text-align:center">No existe la cotización “${slug}”.</p>`;
+  </script>
+</body>
+</html>

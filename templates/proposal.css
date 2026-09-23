@@ -1,0 +1,137 @@
+/* ============================================================
+   Olmo Cotiza — hoja de estilos de la propuesta (A4)
+   Consume los tokens del sistema de diseño de Olmo. Ningún valor
+   de color, tipografía o radio se define aquí por fuera de ellos,
+   salvo transparencias de blanco sobre la portada.
+   ============================================================ */
+
+@import "./tokens/fonts.css";
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+
+@page { size: A4; margin: 0; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--canvas);
+  font-family: var(--font-body);
+  color: var(--ink);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page {
+  width: 210mm;
+  height: 297mm;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+}
+
+@media screen {
+  body { padding: var(--space-7) 0; }
+  .page { margin: 0 auto var(--space-7); box-shadow: var(--shadow-lg); }
+}
+
+.wordmark {
+  font-family: var(--font-logo);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.label {
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ── Portada ────────────────────────────────────────────────
+   Regla del sistema (cotizacion-rules): la portada SIEMPRE usa
+   --grad-cover, nunca un color plano. Título en dos líneas:
+   línea 1 Inter, línea 2 Source Serif 4 itálica.
+   ─────────────────────────────────────────────────────────── */
+.cover {
+  background: var(--grad-cover);
+  color: var(--white);
+  padding: var(--space-8) var(--space-8) var(--space-7);
+  display: flex;
+  flex-direction: column;
+}
+
+.cover__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cover__top .wordmark { font-size: 34px; }
+.cover__top .label { opacity: 0.85; }
+
+.cover__body {
+  margin-top: auto;
+}
+
+.cover__title {
+  margin: 0;
+  font-weight: normal;
+}
+.cover__title-l1 {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.cover__title-l2 {
+  display: block;
+  margin-top: var(--space-2);
+  font-family: var(--font-script);
+  font-style: italic;
+  font-weight: var(--fw-extralight);
+  font-size: 88px;
+  line-height: 0.95;
+  letter-spacing: -0.015em;
+}
+
+.cover--long .cover__title-l1 { font-size: 52px; }
+.cover--long .cover__title-l2 { font-size: 72px; }
+
+.cover__summary {
+  margin: var(--space-6) 0 0;
+  max-width: 440px;
+  font-size: 17px;
+  line-height: 1.55;
+  font-weight: var(--text-support-weight);
+  opacity: 0.88;
+}
+
+.cover__meta {
+  margin-top: var(--space-8);
+  padding-top: var(--space-5);
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+}
+.cover__meta .label { opacity: 0.7; }
+.cover__meta-value {
+  margin-top: var(--space-2);
+  font-size: 20px;
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.01em;
+}
+
+.cover__foot {
+  margin-top: var(--space-7);
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  opacity: 0.75;
+}
