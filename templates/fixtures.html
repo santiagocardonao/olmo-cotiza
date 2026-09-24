@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Casos</title>
+<link rel="stylesheet" href="./proposal.css"></head>
+<body><main id="doc"></main>
+<script type="module">
+  // Casos de prueba sin base de datos, con estructuras tomadas de propuestas
+  // reales de Olmo (datos ficticios). ?c=dual | mensual | fases
+  import { renderProposal } from "./proposal.js";
+  const L = (o) => ({ detail: null, currency: "COP", unit_price: null, unit_price_max: null, quantity: null, cap_quantity: null,
+    percent: null, percent_base: null, minimum_amount: null, alt_currency: null, alt_unit_price: null, is_optional: false, ...o });
+  const base = (copy) => ({ language: "es", issued_on: "2026-09-24", expires_on: "2026-10-09", valid_days: 15,
+    copy: { intro: { heading: "Hola Ana. Esto es", accent: "lo que proponemos.", body: "Texto de introducción de prueba con dos frases. La segunda explica cómo se paga." },
+      highlights: [{ title: "Uno", body: "Ventaja uno." }, { title: "Dos", body: "Ventaja dos." }, { title: "Tres", body: "Ventaja tres." }],
+      includes: ["Ítem incluido"], excludes: ["Ítem excluido"], notes: [], process: [
+        { title: "Paso", body: "Descripción." }, { title: "Paso", body: "Descripción." }, { title: "Paso", body: "Descripción." }, { title: "Paso", body: "Descripción." }],
+      closing: { heading: "Gracias, Ana.", accent: "Hablemos.", body: "Cierre." }, ...copy } });
+  const CASES = {
+    dual: { quote: { title: "Sitio en Framer", title_accent: "para Estudio Faro.", ...base({
+        conditions: [{ title: "Cero comisiones", body: "El sitio no cobra comisión por transacción." }, { title: "Suscripción de Framer", body: "Se paga directo a Framer según el plan." }, { title: "Cuándo arranca el reloj", body: "Las 3–4 semanas empiezan al recibir el material." }] }) },
+      client: { name: "Estudio Faro" },
+      options: [{ name: "Sitio en español", is_recommended: false, lines: [
+        L({ label: "Diseño y desarrollo", pricing_model: "fixed", unit_price: 2700000, alt_currency: "USD", alt_unit_price: 690 }),
+        L({ label: "Página adicional", pricing_model: "per_unit", currency: "USD", unit_price: 90, is_optional: true })] }],
+      milestones: [{ label: "Al aprobar", percent: 50 }, { label: "Al entregar", percent: 50 }] },
+    mensual: { quote: { title: "Asesoría mensual", title_accent: "para Lina Ruiz.", ...base({
+        examples: { intro: "Estimaciones: cada solicitud se cotiza cerrada antes de ejecutarla.", rows: [
+          { label: "Seteo de email marketing", detail: "12 horas", amount: "$1.680.000 COP" },
+          { label: "Landing o micrositio", detail: "20 a 30 horas", amount: "$2.800.000 – $4.200.000 COP" }] } }) },
+      client: { name: "Lina Ruiz" },
+      options: [{ name: "Plan mensual + tasa preferencial", is_recommended: false, lines: [
+        L({ label: "Fijo mensual", pricing_model: "monthly", unit_price: 1600000, quantity: 2, alt_currency: "EUR", alt_unit_price: 440 }),
+        L({ label: "Tasa variable", pricing_model: "hourly", unit_price: 140000 }),
+        L({ label: "Landing o micrositio", pricing_model: "fixed", unit_price: 2800000, unit_price_max: 4200000, is_optional: true })] }],
+      milestones: [] },
+    fases: { quote: { title: "Migración a Shopify", title_accent: "para Casa Tinta.", ...base({
+        diagnosis: { heading: "Por qué el sitio actual", accent: "no alcanza.", body: "La tienda depende de plugins que no se actualizan. Cada cambio toma días.",
+          points: [{ title: "Plataforma cerrada", body: "No permite integrar inventario." }, { title: "Contenido disperso", body: "Más de 30 proyectos sin plantilla común." }] },
+        process: Array.from({ length: 7 }, (_, i) => ({ title: `Fase ${i + 1}`, body: "Qué se entrega en esta fase y cuándo se revisa." })) }) },
+      client: { name: "Casa Tinta" },
+      options: [{ name: "Proyecto completo", is_recommended: false, lines: [
+        L({ label: "Fases 1 y 2 · Descubrimiento y arquitectura", pricing_model: "fixed", unit_price: 4200000 }),
+        L({ label: "Fases 3 y 4 · Diseño y desarrollo", pricing_model: "fixed", unit_price: 9800000 }),
+        L({ label: "Fases 5 a 7 · Migración, pruebas y lanzamiento", pricing_model: "fixed", unit_price: 8171100 })] }],
+      milestones: [{ label: "Al aprobar", percent: 40 }, { label: "Al terminar la fase 4", percent: 30 }, { label: "Al lanzar", percent: 30 }] },
+  };
+  const c = new URLSearchParams(location.search).get("c") ?? "dual";
+  document.getElementById("doc").innerHTML = renderProposal(CASES[c]);
+  await document.fonts.ready;
+  const over = [...document.querySelectorAll(".page")].map((p, i) => ({ page: i + 1, over: p.scrollHeight - p.clientHeight })).filter((o) => o.over > 0);
+  document.title = `${document.querySelectorAll(".page").length} páginas · desborde ${JSON.stringify(over)}`;
+</script></body></html>

@@ -13,6 +13,7 @@ const OLMO = {
   email: "hola@olmo.agency",
   whatsapp: "+57 319 332 6821",
   footer: "Olmo © 2026 · Creado por Santiago Cardona Ortiz · olmo.agency",
+  paymentMethods: "Transferencia Bancolombia · Llaves Bre-B · Cuenta en EE. UU. · USDT · PayPal · Tarjeta",
 };
 
 export function renderProposal(data) {
@@ -23,9 +24,11 @@ export function renderProposal(data) {
 
   const inner = [
     copy.intro && introPage(lang, copy),
+    copy.diagnosis && diagnosisPage(lang, copy.diagnosis),
     (copy.includes?.length || copy.excludes?.length) && scopePage(lang, copy),
-    ...(options.length ? investmentPages(lang, options, milestones) : []),
+    ...(options.length ? investmentPages(lang, options, milestones, copy.examples) : []),
     copy.process?.length && processPage(lang, copy),
+    copy.conditions?.length && conditionsPage(lang, copy.conditions),
   ].filter(Boolean);
 
   const pages = inner.map((body, i) => interior(docTitle, body, i + 2));
@@ -69,6 +72,33 @@ function introPage(lang, copy) {
   ${cards ? `<div class="grid grid--3 push-bottom">${cards}</div>` : ""}`;
 }
 
+// ── Diagnóstico ──────────────────────────────────────────────
+function diagnosisPage(lang, d) {
+  const points = (d.points ?? []).slice(0, 4).map((p) => `
+    <div class="card">
+      <h3 class="card__title">${e(p.title)}</h3>
+      <p class="support">${e(p.body)}</p>
+    </div>`).join("");
+  return `
+  ${pill(t(lang, "diagnosisPill"))}
+  ${heading(d.heading, d.accent)}
+  <p class="lead">${e(d.body)}</p>
+  ${points ? `<div class="grid grid--2">${points}</div>` : ""}`;
+}
+
+// ── Condiciones ──────────────────────────────────────────────
+function conditionsPage(lang, conditions) {
+  const cards = conditions.slice(0, 6).map((c) => `
+    <div class="card">
+      <h3 class="card__title">${e(c.title)}</h3>
+      <p class="support">${e(c.body)}</p>
+    </div>`).join("");
+  return `
+  ${pill(t(lang, "conditionsPill"))}
+  ${heading(t(lang, "conditionsHeading"), t(lang, "conditionsAccent"))}
+  <div class="grid grid--2">${cards}</div>`;
+}
+
 // ── Alcance ──────────────────────────────────────────────────
 function scopePage(lang, copy) {
   const list = (items, kind) => `<ul class="checklist checklist--${kind}">${items.map((i) => `<li>${e(i)}</li>`).join("")}</ul>`;
@@ -102,7 +132,7 @@ const TERMS_HEIGHT = 230;       // forma de pago + costos de terceros
 const GAP = 16;
 const TWO_COL_LINES = 12;       // más líneas que esto: la tarjeta las reparte en 2 columnas
 
-function investmentPages(lang, options, milestones) {
+function investmentPages(lang, options, milestones, examples) {
   const cols = options.length >= 3 ? 3 : options.length === 2 ? 2 : 1;
   const lineCount = (o) => (o.lines ?? []).filter((l) => l.pricing_model !== "pass_through").length;
   const visibleLines = (o) => (cols === 1 && lineCount(o) > TWO_COL_LINES ? Math.ceil(lineCount(o) / 2) : lineCount(o));
@@ -128,8 +158,9 @@ function investmentPages(lang, options, milestones) {
   }
   pages.push(current);
 
-  const terms = termsBlock(lang, options, milestones);
-  const termsFit = terms && used + GAP + TERMS_HEIGHT <= BODY_HEIGHT;
+  const terms = termsBlock(lang, options, milestones) + examplesBlock(lang, examples);
+  const termsHeight = TERMS_HEIGHT + (examples?.rows?.length ? 90 + 34 * examples.rows.length : 0);
+  const termsFit = terms && used + GAP + termsHeight <= BODY_HEIGHT;
   const tall = rows.some((r) => r.height > BODY_HEIGHT);
 
   const out = pages.map((page, i) => `
@@ -149,6 +180,18 @@ function investmentPages(lang, options, milestones) {
   return out;
 }
 
+function examplesBlock(lang, examples) {
+  if (!examples?.rows?.length) return "";
+  return `
+    <div class="card">
+      <div class="label label--muted">${t(lang, "examplesTitle")}</div>
+      ${examples.intro ? `<p class="support support--small examples__intro">${e(examples.intro)}</p>` : ""}
+      <dl class="rows">${examples.rows.map((r) => `
+        <div class="row"><dt>${e(r.label)}${r.detail ? ` <span class="muted-inline">· ${e(r.detail)}</span>` : ""}</dt><dd>${e(r.amount)}</dd></div>`).join("")}
+      </dl>
+    </div>`;
+}
+
 function termsBlock(lang, options, milestones) {
   const third = passThroughCosts(options);
   const ref = firstOneTimeTotal(options);
@@ -160,6 +203,7 @@ function termsBlock(lang, options, milestones) {
         <div class="row"><dt>${e(m.label)}</dt><dd>${ref ? money(ref.amount * Number(m.percent) / 100, ref.currency) : `${Number(m.percent)}%`}</dd></div>`).join("")}
       </dl>
       ${ref && options.length > 1 ? `<p class="support support--small">${t(lang, "valuesFor")} ${e(ref.option.name)}.</p>` : ""}
+      <p class="support support--small"><strong>${t(lang, "paymentMethods")}:</strong> ${OLMO.paymentMethods}</p>
     </div>` : "";
 
   const recurring = third.length ? `
@@ -189,6 +233,7 @@ function optionCard(lang, option, index, total) {
     <h3 class="option__name">${e(option.name)}</h3>
     ${head.amounts.length ? `
     <div class="option__price">${head.amounts.map((a) => `<span>${e(a)}</span>`).join("")}</div>
+    ${head.alt ? `<div class="option__alt">${t(lang, "or")} ${e(head.alt)}</div>` : ""}
     <div class="option__suffix">${e(head.suffix)}</div>` : ""}
     <ul class="option__lines${total === 1 && lines.length > TWO_COL_LINES ? " option__lines--2col" : ""}">${lines.map((l) => {
       const p = linePrice(lang, l);
@@ -218,16 +263,17 @@ function firstOneTimeTotal(options) {
 
 // ── Proceso ──────────────────────────────────────────────────
 function processPage(lang, copy) {
-  const steps = copy.process.slice(0, 4).map((s, i) => `
+  const list = copy.process.slice(0, 8);
+  const steps = list.map((s, i) => `
     <div class="card step">
-      <span class="step__n">0${i + 1}</span>
+      <span class="step__n">${String(i + 1).padStart(2, "0")}</span>
       <h3 class="card__title">${e(s.title)}</h3>
       <p class="support">${e(s.body)}</p>
     </div>`).join("");
   return `
   ${pill(t(lang, "processPill"))}
   ${heading(t(lang, "processHeading"), t(lang, "processAccent"))}
-  <div class="grid grid--2">${steps}</div>`;
+  <div class="grid ${list.length > 4 ? "grid--2 steps--compact" : "grid--2"}">${steps}</div>`;
 }
 
 // ── Contraportada ────────────────────────────────────────────

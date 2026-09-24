@@ -349,3 +349,10 @@ html, body {
 .options--compact .option__line-price { font-size: 11px; }
 .option__lines--2col { columns: 2; column-gap: var(--space-5); }
 .option__lines--2col li { break-inside: avoid; }
+
+.option__alt { font-size: 14px; font-weight: var(--fw-medium); opacity: 0.8; margin-top: 2px; }
+.muted-inline { color: var(--gray-400); font-weight: var(--text-support-weight); }
+.examples__intro { margin: 0 0 var(--space-2); }
+.steps--compact .card.step { padding: var(--space-4); }
+.steps--compact .step__n { font-size: 20px; margin-bottom: var(--space-2); }
+.steps--compact .support { font-size: 12px; }
