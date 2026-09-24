@@ -339,3 +339,13 @@ html, body {
 
 .cover--back-long .cover__title-l1 { font-size: 44px; }
 .cover--back-long .cover__title-l2 { font-size: 52px; }
+
+/* Tres opciones o tarjetas muy largas: versión compacta */
+.options--compact .card.option { padding: var(--space-4); }
+.options--compact .option__name { font-size: 16px; }
+.options--compact .option__price { font-size: 22px; }
+.options--compact .option__lines li { padding: 4px 0; }
+.options--compact .option__line-label { font-size: 12px; }
+.options--compact .option__line-price { font-size: 11px; }
+.option__lines--2col { columns: 2; column-gap: var(--space-5); }
+.option__lines--2col li { break-inside: avoid; }

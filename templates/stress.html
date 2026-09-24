@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Prueba de desborde</title>
+<link rel="stylesheet" href="./proposal.css"></head>
+<body><main id="doc"></main>
+<script type="module">
+  // Caso extremo sin base de datos: 3 opciones con muchas líneas.
+  import { renderProposal } from "./proposal.js";
+  const line = (label, extra = {}) => ({ label, detail: null, pricing_model: "fixed", currency: "COP", unit_price: 1200000, quantity: null, cap_quantity: null, percent: null, percent_base: null, minimum_amount: null, is_optional: false, ...extra });
+  const lines = (n) => Array.from({ length: n }, (_, i) => line(`Entregable número ${i + 1} con nombre largo`));
+  const data = {
+    quote: { title: "Plataforma completa", title_accent: "para Prueba.", summary: "Caso extremo.", language: "es", issued_on: "2026-09-24", expires_on: "2026-10-09", valid_days: 15,
+      copy: { intro: { heading: "Hola.", accent: "Prueba.", body: "Texto." }, highlights: [], includes: ["a"], excludes: ["b"], notes: [], process: [], closing: { heading: "Gracias.", accent: "Fin.", body: "" } } },
+    client: { name: "Prueba" },
+    options: [
+      { name: "Básica", description: null, is_recommended: false, lines: [...lines(7), line("Hosting", { pricing_model: "pass_through", currency: "USD", unit_price: 30 })] },
+      { name: "Estándar", description: "Todo lo de la básica y más.", is_recommended: true, lines: lines(9) },
+      { name: "Completa", description: null, is_recommended: false, lines: [...lines(10), line("Horas extra", { pricing_model: "per_unit", unit_price: 150000, is_optional: true })] },
+    ],
+    milestones: [{ label: "Al aprobar", percent: 40 }, { label: "A mitad", percent: 30 }, { label: "Al entregar", percent: 30 }],
+  };
+  document.getElementById("doc").innerHTML = renderProposal(data);
+  // Reporta páginas cuyo contenido excede la hoja
+  await document.fonts.ready;
+  window.overflow = [...document.querySelectorAll(".page")].map((p, i) => ({ page: i + 1, over: p.scrollHeight - p.clientHeight }));
+  document.title = JSON.stringify(window.overflow.filter((o) => o.over > 0));
+</script></body></html>

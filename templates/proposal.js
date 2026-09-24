@@ -24,7 +24,7 @@ export function renderProposal(data) {
   const inner = [
     copy.intro && introPage(lang, copy),
     (copy.includes?.length || copy.excludes?.length) && scopePage(lang, copy),
-    options.length && investmentPage(lang, options, milestones),
+    ...(options.length ? investmentPages(lang, options, milestones) : []),
     copy.process?.length && processPage(lang, copy),
   ].filter(Boolean);
 
@@ -93,9 +93,63 @@ function scopePage(lang, copy) {
 }
 
 // ── Inversión ────────────────────────────────────────────────
-function investmentPage(lang, options, milestones) {
-  const cols = options.length > 1 ? "grid--2" : "grid--1";
-  const cards = options.map((o, i) => optionCard(lang, o, i, options.length)).join("");
+// Las hojas A4 tienen alto fijo, así que el reparto se decide antes de
+// renderizar con una estimación de alto por tarjeta (en px de pantalla).
+const BODY_HEIGHT = 780;        // alto útil de una página interna bajo el título
+const CARD_BASE = 175;          // tarjeta de opción sin líneas
+const CARD_LINE = 44;           // cada línea dentro de la tarjeta
+const TERMS_HEIGHT = 230;       // forma de pago + costos de terceros
+const GAP = 16;
+const TWO_COL_LINES = 12;       // más líneas que esto: la tarjeta las reparte en 2 columnas
+
+function investmentPages(lang, options, milestones) {
+  const cols = options.length >= 3 ? 3 : options.length === 2 ? 2 : 1;
+  const lineCount = (o) => (o.lines ?? []).filter((l) => l.pricing_model !== "pass_through").length;
+  const visibleLines = (o) => (cols === 1 && lineCount(o) > TWO_COL_LINES ? Math.ceil(lineCount(o) / 2) : lineCount(o));
+
+  // Filas de tarjetas y su alto estimado
+  const rows = [];
+  for (let i = 0; i < options.length; i += cols) {
+    const row = options.slice(i, i + cols).map((o, j) => ({ o, index: i + j }));
+    rows.push({ row, height: CARD_BASE + CARD_LINE * Math.max(...row.map(({ o }) => visibleLines(o))) });
+  }
+
+  // Agrupar filas en páginas
+  const pages = [];
+  let current = [], used = 0;
+  for (const r of rows) {
+    if (current.length && used + GAP + r.height > BODY_HEIGHT) {
+      pages.push(current);
+      current = [];
+      used = 0;
+    }
+    current.push(r);
+    used += (current.length > 1 ? GAP : 0) + r.height;
+  }
+  pages.push(current);
+
+  const terms = termsBlock(lang, options, milestones);
+  const termsFit = terms && used + GAP + TERMS_HEIGHT <= BODY_HEIGHT;
+  const tall = rows.some((r) => r.height > BODY_HEIGHT);
+
+  const out = pages.map((page, i) => `
+  ${pill(t(lang, "investmentPill"))}
+  ${i === 0 ? heading(t(lang, "investmentHeading"), t(lang, "investmentAccent")) : ""}
+  <div class="grid grid--${cols}${cols === 3 || tall ? " options--compact" : ""}">
+    ${page.flatMap((r) => r.row).map(({ o, index }) => optionCard(lang, o, index, options.length)).join("")}
+  </div>
+  ${i === pages.length - 1 && termsFit ? terms : ""}`);
+
+  if (terms && !termsFit) {
+    out.push(`
+  ${pill(t(lang, "paymentTerms"))}
+  ${heading(t(lang, "investmentHeading"), t(lang, "investmentAccent"))}
+  ${terms}`);
+  }
+  return out;
+}
+
+function termsBlock(lang, options, milestones) {
   const third = passThroughCosts(options);
   const ref = firstOneTimeTotal(options);
 
@@ -117,11 +171,7 @@ function investmentPage(lang, options, milestones) {
       <p class="support support--small">${t(lang, "recurringNote")}</p>
     </div>` : "";
 
-  return `
-  ${pill(t(lang, "investmentPill"))}
-  ${heading(t(lang, "investmentHeading"), t(lang, "investmentAccent"))}
-  <div class="grid ${cols}">${cards}</div>
-  ${payment || recurring ? `<div class="grid grid--2">${payment}${recurring}</div>` : ""}`;
+  return payment || recurring ? `<div class="grid grid--2">${payment}${recurring}</div>` : "";
 }
 
 function optionCard(lang, option, index, total) {
@@ -140,7 +190,7 @@ function optionCard(lang, option, index, total) {
     ${head.amounts.length ? `
     <div class="option__price">${head.amounts.map((a) => `<span>${e(a)}</span>`).join("")}</div>
     <div class="option__suffix">${e(head.suffix)}</div>` : ""}
-    <ul class="option__lines">${lines.map((l) => {
+    <ul class="option__lines${total === 1 && lines.length > TWO_COL_LINES ? " option__lines--2col" : ""}">${lines.map((l) => {
       const p = linePrice(lang, l);
       return `<li>
         <div class="option__line-label">${e(l.label)}${l.is_optional ? ` <span class="tag">${t(lang, "optional")}</span>` : ""}</div>
