@@ -12,7 +12,7 @@
 import Anthropic from "npm:@anthropic-ai/sdk@0.128.0";
 import { zodOutputFormat } from "npm:@anthropic-ai/sdk@0.128.0/helpers/zod";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { businessErrors, QuoteDraft } from "./schema.ts";
+import { businessErrors, CopyDraft, PricingDraft, type QuoteDraft } from "./schema.ts";
 import { SYSTEM_PROMPT, userMessage } from "./prompt.ts";
 
 const ORG = {
@@ -83,30 +83,37 @@ Deno.serve(async (req) => {
   }
 
   // ── Claude: free text → validated structure ─────────────
-  let draft: QuoteDraft;
-  try {
-    const response = await anthropic.messages.parse(
+  // Pricing and copy go in two parallel calls (see schema.ts).
+  const ask = <T,>(part: "pricing" | "copy", schema: Parameters<typeof zodOutputFormat>[0]) =>
+    anthropic.messages.parse(
       {
         model: "claude-opus-5",
         max_tokens: 16000,
         thinking: { type: "adaptive" },
         system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userMessage({ client_name, prepared_for, language, currency, source_text }) }],
-        output_config: { format: zodOutputFormat(QuoteDraft) },
+        messages: [{ role: "user", content: userMessage({ client_name, prepared_for, language, currency, source_text, part }) }],
+        output_config: { format: zodOutputFormat(schema) },
         // If a safety classifier declines, the API retries on the recommended model.
         // @ts-expect-error: `fallbacks: "default"` is not in the SDK types yet
         fallbacks: "default",
       },
       { headers: { "anthropic-beta": "server-side-fallback-2026-07-01" } },
-    );
+    ) as Promise<{ stop_reason: string | null; parsed_output: T | null }>;
 
-    if (response.stop_reason === "refusal") {
+  let draft: QuoteDraft;
+  try {
+    const [pricing, copy] = await Promise.all([
+      ask<PricingDraft>("pricing", PricingDraft),
+      ask<CopyDraft>("copy", CopyDraft),
+    ]);
+
+    if (pricing.stop_reason === "refusal" || copy.stop_reason === "refusal") {
       return json(422, { error: "El modelo no pudo procesar esta descripción. Reformúlala e intenta de nuevo." });
     }
-    if (response.stop_reason === "max_tokens" || !response.parsed_output) {
+    if (!pricing.parsed_output || !copy.parsed_output) {
       return json(502, { error: "La respuesta del modelo quedó incompleta. Intenta de nuevo." });
     }
-    draft = response.parsed_output;
+    draft = { ...pricing.parsed_output, copy: copy.parsed_output };
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) return json(429, { error: "Demasiadas solicitudes al modelo. Espera un minuto." });
     if (err instanceof Anthropic.AuthenticationError) {

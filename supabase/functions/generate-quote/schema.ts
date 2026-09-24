@@ -25,7 +25,9 @@ const Line = z.object({
 const Card = z.object({ title: z.string(), body: z.string() });
 const ExampleRow = z.object({ label: z.string(), detail: z.string().nullable(), amount: z.string() });
 
-export const QuoteDraft = z.object({
+// Claude answers in two parallel calls, one per schema: a single schema
+// with pricing and copy compiles into a grammar the API rejects as too large.
+export const PricingDraft = z.object({
   title: z.string().describe("Línea 1 de la portada, máx. ~22 caracteres. Ej: 'Sitio web en Framer'"),
   title_accent: z.string().describe("Línea 2 de la portada, en itálica. Ej: 'para Romero.'"),
   summary: z.string().describe("Bajada de portada: 1–2 frases"),
@@ -37,23 +39,26 @@ export const QuoteDraft = z.object({
   })),
   milestones: z.array(z.object({ label: z.string(), percent: z.number() }))
     .describe("Hitos de pago del pago único; los porcentajes suman 100. Vacío si no hay pago único"),
-  copy: z.object({
-    intro: z.object({ heading: z.string(), accent: z.string(), body: z.string() }),
-    highlights: z.array(Card).describe("Exactamente 3"),
-    includes: z.array(z.string()),
-    excludes: z.array(z.string()),
-    notes: z.array(z.string()).describe("Aclaraciones cortas del alcance; puede ir vacío"),
-    diagnosis: z.object({ heading: z.string(), accent: z.string(), body: z.string(), points: z.array(Card) }).nullable()
-      .describe("Solo si la descripción explica un problema del cliente que vale la pena diagnosticar; null si no"),
-    conditions: z.array(Card).describe("Condiciones comerciales de la descripción (comisiones, cuándo arranca el plazo, qué paga el cliente aparte); vacío si no hay"),
-    examples: z.object({ intro: z.string(), rows: z.array(ExampleRow) }).nullable()
-      .describe("Solo si la descripción da ejemplos de cálculo (\"5 quizzes = ...\", \"ejemplo de un mes\"); montos copiados de la descripción; null si no"),
-    process: z.array(Card).describe("Entre 3 y 8 pasos o fases, según la descripción; 4 si no dice nada"),
-    closing: z.object({ heading: z.string(), accent: z.string(), body: z.string() }),
-  }),
 });
 
-export type QuoteDraft = z.infer<typeof QuoteDraft>;
+export const CopyDraft = z.object({
+  intro: z.object({ heading: z.string(), accent: z.string(), body: z.string() }),
+  highlights: z.array(Card).describe("Exactamente 3"),
+  includes: z.array(z.string()),
+  excludes: z.array(z.string()),
+  notes: z.array(z.string()).describe("Aclaraciones cortas del alcance; puede ir vacío"),
+  diagnosis: z.object({ heading: z.string(), accent: z.string(), body: z.string(), points: z.array(Card) }).nullable()
+    .describe("Solo si la descripción explica un problema del cliente que vale la pena diagnosticar; null si no"),
+  conditions: z.array(Card).describe("Condiciones comerciales de la descripción (comisiones, cuándo arranca el plazo, qué paga el cliente aparte); vacío si no hay"),
+  examples: z.object({ intro: z.string(), rows: z.array(ExampleRow) }).nullable()
+    .describe("Solo si la descripción da ejemplos de cálculo (\"5 quizzes = ...\", \"ejemplo de un mes\"); montos copiados de la descripción; null si no"),
+  process: z.array(Card).describe("Entre 3 y 8 pasos o fases, según la descripción; 4 si no dice nada"),
+  closing: z.object({ heading: z.string(), accent: z.string(), body: z.string() }),
+});
+
+export type PricingDraft = z.infer<typeof PricingDraft>;
+export type CopyDraft = z.infer<typeof CopyDraft>;
+export type QuoteDraft = PricingDraft & { copy: CopyDraft };
 
 // Rules the JSON schema cannot express. Returns readable errors.
 export function businessErrors(d: QuoteDraft): string[] {

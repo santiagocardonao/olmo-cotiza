@@ -55,8 +55,14 @@ export function userMessage(input: {
   language: "es" | "en";
   currency: "COP" | "USD" | "EUR";
   source_text: string;
+  part: "pricing" | "copy";
 }) {
-  return `Cliente / proyecto: ${input.client_name}
+  const task = input.part === "pricing"
+    ? "Tarea: devuelve solo la portada (title, title_accent, summary), las opciones con sus líneas de cobro y los hitos de pago."
+    : "Tarea: devuelve solo los textos de la propuesta (copy).";
+  return `${task}
+
+Cliente / proyecto: ${input.client_name}
 Preparado para: ${input.prepared_for}
 Idioma de la propuesta: ${input.language}
 Moneda principal: ${input.currency}
