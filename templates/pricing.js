@@ -15,10 +15,12 @@ export function linePrice(lang, line) {
     case "hourly":
       return {
         price: `${p} / ${t(lang, "perHour")}`,
-        detail: t(lang, "hoursEstimated", num(line.quantity), line.cap_quantity ? num(line.cap_quantity) : null),
+        detail: line.quantity == null
+          ? t(lang, "onDemand")
+          : t(lang, "hoursEstimated", num(line.quantity), line.cap_quantity ? num(line.cap_quantity) : null),
       };
     case "monthly":
-      return { price: `${p} / ${t(lang, "perMonth")}`, detail: null };
+      return { price: `${p} / ${t(lang, "perMonth")}`, detail: line.quantity ? t(lang, "minMonths", num(line.quantity)) : null };
     case "per_unit":
       return {
         price: `${p} / ${t(lang, "perUnit")}`,
@@ -50,7 +52,7 @@ export function optionHeadline(lang, option) {
   }
   const one = Object.entries(oneTime);
   if (one.length) {
-    const hourly = (option.lines ?? []).some((l) => l.pricing_model === "hourly" && !l.is_optional);
+    const hourly = (option.lines ?? []).some((l) => l.pricing_model === "hourly" && l.quantity != null && !l.is_optional);
     return { amounts: one.map(([c, a]) => money(a, c)), suffix: t(lang, hourly ? "estimatedCap" : "oneTime") };
   }
   const mon = Object.entries(monthly);

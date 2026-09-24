@@ -10,8 +10,8 @@ export const SYSTEM_PROMPT = `Eres el estratega y redactor de Olmo, una agencia 
 
 ## Cómo modelar los cobros (pricing_model)
 - fixed: precio cerrado.
-- hourly: tarifa por hora. quantity = horas estimadas (obligatorio); cap_quantity = techo si lo hay.
-- monthly: fijo mensual cobrado por Olmo.
+- hourly: tarifa por hora. quantity = horas estimadas si la descripción las da; cap_quantity = techo si lo hay. Si la tarifa se aplica a demanda ("por cada solicitud", "tasa variable"), quantity = null.
+- monthly: fijo mensual cobrado por Olmo. Si hay compromiso mínimo, quantity = número de meses.
 - per_unit: precio por unidad (página adicional, módulo, quiz). quantity solo si la descripción fija cuántas.
 - percentage: porcentaje sobre una base (ej. pagos procesados). percent y percent_base obligatorios; unit_price = null; minimum_amount si hay mínimo.
 - pass_through: costo de terceros que el cliente paga directo al proveedor (plan de Shopify, Framer, hosting).

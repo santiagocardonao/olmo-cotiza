@@ -11,7 +11,7 @@ const Line = z.object({
   pricing_model: PricingModel,
   currency: Currency,
   unit_price: z.number().nullable().describe("Precio, tarifa por hora, mensualidad o precio por unidad. null solo si pricing_model es percentage"),
-  quantity: z.number().nullable().describe("Horas estimadas (obligatorio en hourly) o unidades; null si no aplica"),
+  quantity: z.number().nullable().describe("hourly: horas estimadas (null si la tarifa es a demanda). per_unit: unidades. monthly: compromiso mínimo en meses. null si no aplica"),
   cap_quantity: z.number().nullable().describe("Techo de horas o unidades; null si no hay"),
   percent: z.number().nullable().describe("Solo en percentage"),
   percent_base: z.string().nullable().describe("Solo en percentage: sobre qué se calcula"),
@@ -61,7 +61,7 @@ export function businessErrors(d: QuoteDraft): string[] {
         if (l.unit_price == null) errors.push(`${where}: falta el precio.`);
         if (l.percent != null) errors.push(`${where}: solo los porcentajes llevan percent.`);
       }
-      if (l.pricing_model === "hourly" && l.quantity == null) errors.push(`${where}: cobro por hora sin horas estimadas.`);
+      if (l.pricing_model === "hourly" && l.quantity == null && l.cap_quantity != null) errors.push(`${where}: techo de horas sin horas estimadas.`);
       if (l.cap_quantity != null && l.quantity != null && l.cap_quantity < l.quantity) errors.push(`${where}: el techo es menor que lo estimado.`);
     });
   });
