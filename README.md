@@ -1,54 +1,57 @@
 # Olmo Cotiza
 
-Generador de cotizaciones de Olmo sobre Supabase. Escribes el alcance y los precios en texto libre; Claude los convierte en datos estructurados; la propuesta se arma con plantillas fijas del sistema de diseño de Olmo y queda guardada y consultable en Postgres: cuánto se cotizó, a quién, qué se abrió y qué se cerró.
+A quote generator built on Supabase. You write the scope and the prices in free text; Claude turns them into structured data; the proposal is assembled from fixed templates of the Olmo design system and stored in Postgres, where it stays queryable: how much was quoted, to whom, what was opened and what was closed.
 
-**En vivo:** [cotiza.olmo.agency](https://cotiza.olmo.agency) · [demo pública](https://cotiza.olmo.agency/demo) (datos ficticios)
+**Live:** [cotiza.olmo.agency](https://cotiza.olmo.agency) · [public demo](https://cotiza.olmo.agency/demo) (fictional data)
 
-## Cómo funciona
+The interface is in Spanish because its users and clients are in Colombia. Proposals are generated in Spanish or English.
+
+## How it works
 
 ```
-Texto libre + precios
-  → Edge Function generate-quote → Claude (salida estructurada, validada con Zod)
-  → reglas de negocio (hitos que suman 100, horas en cobros por hora, …)
-  → create_quote(): una sola transacción en Postgres, bajo RLS
-  → plantillas HTML (templates/) → vista previa, enlace público y PDF con texto real
+Free text + prices
+  → Edge Function generate-quote → Claude (structured output, validated with Zod)
+  → business rules (milestones that add up to 100, hours on hourly pricing, …)
+  → create_quote(): a single Postgres transaction, under RLS
+  → HTML templates (templates/) → preview, public link and PDF with real text
 ```
 
-El modelo redacta y estructura; **el diseño lo ponen las plantillas**, así que cada propuesta sale consistente con el sistema de Olmo.
+The model drafts and structures; **the templates own the design**, so every proposal comes out consistent with the Olmo system.
 
-## Estructura
+## Structure
 
 ```
 supabase/
-  migrations/          esquema, RLS, enlace público, vencimiento (pg_cron), create_quote()
-  functions/generate-quote/   Edge Function: texto libre → cotización guardada
-  seed.sql             demo: 5 cotizaciones ficticias, una por modelo de cobro
-templates/             propuesta A4 sin dependencias (portada, intro, alcance, inversión,
-                       proceso, contraportada) + tokens y fuentes de Olmo
-app/                   Vite + React: panel, nueva cotización, detalle, vista del cliente
+  migrations/          schema, RLS, public link, expiry (pg_cron), create_quote()
+  functions/generate-quote/   Edge Function: free text → stored quote
+  seed.sql             demo: 5 fictional quotes, one per pricing model
+templates/             dependency-free A4 proposal (cover, intro, scope, investment,
+                       process, back cover) + Olmo tokens and fonts
+app/                   Vite + React: dashboard, new quote, detail, client view
 ```
 
-## Modelo de datos
+## Data model
 
-- `organizations` separa **Olmo** (privada) de **Demo** (pública, solo lectura para visitantes).
-- `quotes` → `quote_options` → `quote_lines`. Cada línea tiene su **modelo de cobro**:
-  `fixed` precio cerrado · `hourly` por hora con techo · `monthly` fijo mensual · `per_unit` por unidad · `percentage` sobre una base · `pass_through` costo de terceros pagado directo al proveedor.
-- `payment_milestones`, `quote_events` (creada, enviada, abierta, aceptada) y `quote_versions`.
+- `organizations` separates **Olmo** (private) from **Demo** (public, read-only for visitors).
+- `quotes` → `quote_options` → `quote_lines`. Each line has its own **pricing model**:
+  `fixed` fixed price · `hourly` per hour with a cap · `monthly` monthly fee · `per_unit` per unit · `percentage` of a base · `pass_through` third-party cost paid directly to the vendor.
+- A line can carry a price range and an equivalent price in a second currency, as real proposals do.
+- `payment_milestones`, `quote_events` (created, sent, opened, accepted) and `quote_versions`.
 
-## Seguridad
+## Security
 
-- RLS en todas las tablas. Las funciones auxiliares de RLS viven en el esquema `private`, fuera de la API.
-- La demo es de solo lectura para visitantes; sus escrituras pasan por la Edge Function con límite diario (3 por visitante, 40 en total).
-- `get_public_quote(slug)` es público a propósito: el slug de cada cotización real es aleatorio (72 bits) y los borradores de Olmo no se exponen.
-- El dueño queda como `owner` de Olmo automáticamente al registrarse con su correo.
+- RLS on every table. RLS helper functions live in the `private` schema, outside the API.
+- The demo is read-only for visitors; its writes go through the Edge Function with a daily limit (3 per visitor, 40 in total).
+- `get_public_quote(slug)` is public on purpose: each real quote's slug is random (72 bits), and Olmo drafts are never exposed.
+- The owner becomes `owner` of the Olmo organization automatically on signing up with their email.
 
-## Desarrollo
+## Development
 
 ```bash
 cd app
 npm install
-npm run dev      # sincroniza templates/ en public/proposal y abre Vite
-npm run deploy   # build + rsync a SiteGround por SSH
+npm run dev      # syncs templates/ into public/proposal and starts Vite
+npm run deploy   # build + rsync to SiteGround over SSH
 ```
 
-La Edge Function necesita el secret `ANTHROPIC_API_KEY` en Supabase.
+The Edge Function needs the `ANTHROPIC_API_KEY` secret in Supabase.
