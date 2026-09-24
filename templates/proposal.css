@@ -1,8 +1,8 @@
 /* ============================================================
-   Olmo Cotiza — hoja de estilos de la propuesta (A4)
-   Consume los tokens del sistema de diseño de Olmo. Ningún valor
-   de color, tipografía o radio se define aquí por fuera de ellos,
-   salvo transparencias de blanco sobre la portada.
+   Olmo Cotiza — proposal stylesheet (A4)
+   Consumes the Olmo design system tokens. No colour, type or
+   radius value is defined here outside of them, except white
+   transparencies on the cover.
    ============================================================ */
 
 @import "./tokens/fonts.css";
@@ -51,10 +51,10 @@ html, body {
   text-transform: uppercase;
 }
 
-/* ── Portada ────────────────────────────────────────────────
-   Regla del sistema (cotizacion-rules): la portada SIEMPRE usa
-   --grad-cover, nunca un color plano. Título en dos líneas:
-   línea 1 Inter, línea 2 Source Serif 4 itálica.
+/* ── Cover ──────────────────────────────────────────────────
+   System rule (cotizacion-rules): the cover ALWAYS uses
+   --grad-cover, never a flat colour. Two-line title:
+   line 1 Inter, line 2 Source Serif 4 italic.
    ─────────────────────────────────────────────────────────── */
 .cover {
   background: var(--grad-cover);
@@ -136,7 +136,7 @@ html, body {
   opacity: 0.75;
 }
 
-/* ── Contraportada ──────────────────────────────────────────── */
+/* ── Back cover ──────────────────────────────────────────── */
 .cover--back .cover__title-l1 { font-size: 52px; font-weight: var(--fw-light); }
 .cover--back .cover__title-l2 { font-size: 64px; }
 .cover__validity {
@@ -145,7 +145,7 @@ html, body {
   opacity: 0.7;
 }
 
-/* ── Páginas internas ───────────────────────────────────────── */
+/* ── Inner pages ───────────────────────────────────────── */
 .interior {
   background: var(--canvas);
   padding: var(--space-7) var(--space-8) var(--space-6);
@@ -280,7 +280,7 @@ html, body {
   padding: 3px 0;
 }
 
-/* Opciones de inversión */
+/* Investment options */
 .option { display: flex; flex-direction: column; }
 .option__top { display: flex; justify-content: space-between; align-items: center; min-height: 22px; }
 .option__top .label { color: var(--gray-500); }
@@ -340,7 +340,7 @@ html, body {
 .cover--back-long .cover__title-l1 { font-size: 44px; }
 .cover--back-long .cover__title-l2 { font-size: 52px; }
 
-/* Tres opciones o tarjetas muy largas: versión compacta */
+/* Three options or very long cards: compact version */
 .options--compact .card.option { padding: var(--space-4); }
 .options--compact .option__name { font-size: 16px; }
 .options--compact .option__price { font-size: 22px; }

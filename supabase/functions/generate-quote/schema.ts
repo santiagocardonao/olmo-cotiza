@@ -1,5 +1,5 @@
-// Esquema de lo que Claude debe devolver. Es el mismo contrato que
-// create_quote() espera y que las plantillas renderizan.
+// Schema of what Claude must return. It is the same contract that
+// create_quote() expects and the templates render.
 import { z } from "npm:zod@4";
 
 const PricingModel = z.enum(["fixed", "hourly", "monthly", "per_unit", "percentage", "pass_through"]);
@@ -55,7 +55,7 @@ export const QuoteDraft = z.object({
 
 export type QuoteDraft = z.infer<typeof QuoteDraft>;
 
-// Reglas que el esquema JSON no puede expresar. Devuelve errores legibles.
+// Rules the JSON schema cannot express. Returns readable errors.
 export function businessErrors(d: QuoteDraft): string[] {
   const errors: string[] = [];
   if (!d.options.length) errors.push("La cotización no tiene opciones.");

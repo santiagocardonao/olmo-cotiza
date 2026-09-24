@@ -1,6 +1,6 @@
 // ============================================================
-// Portada de la propuesta.
-// Sin dependencias: corre igual en el navegador y en una Edge Function.
+// Proposal cover.
+// No dependencies: runs the same in the browser and in an Edge Function.
 // ============================================================
 
 import { escapeHtml, t } from "./i18n.js";
@@ -8,7 +8,7 @@ import { escapeHtml, t } from "./i18n.js";
 export function renderCover(quote, client) {
   const lang = quote.language ?? "es";
   const year = String(quote.issued_on ?? "").slice(0, 4);
-  // Títulos largos bajan un paso de tamaño para no partirse en 4 líneas.
+  // Long titles drop one size step so they do not break into 4 lines.
   const longest = Math.max(quote.title?.length ?? 0, quote.title_accent?.length ?? 0);
   const sizeClass = longest > 18 ? " cover--long" : "";
 

@@ -1,7 +1,7 @@
 -- ============================================================
--- create_quote(payload): guarda una cotización completa en una
--- sola transacción. SECURITY INVOKER: las políticas RLS del que
--- llama deciden si puede escribir en esa organización.
+-- create_quote(payload): stores a complete quote in a single
+-- transaction. SECURITY INVOKER: the caller's RLS policies
+-- decide whether it may write to that organization.
 -- ============================================================
 
 create function public.create_quote(payload jsonb)
@@ -78,7 +78,7 @@ end $$;
 revoke execute on function public.create_quote(jsonb) from public, anon;
 grant execute on function public.create_quote(jsonb) to authenticated, service_role;
 
--- La Edge Function registra el evento 'created' como el usuario; los
--- miembros necesitan poder insertar eventos de su organización.
+-- The Edge Function records the 'created' event as the user, so
+-- members need to be able to insert events for their organization.
 create policy "events: insert members" on public.quote_events
   for insert to authenticated with check (private.is_member(private.quote_org(quote_id)));

@@ -1,5 +1,5 @@
-// Copia CSS, tokens y fuentes de la propuesta a public/proposal/ para
-// que el iframe de vista previa y la impresión los carguen por URL.
+// Copies the proposal's CSS, tokens and fonts into public/proposal/ so
+// the preview iframe and the print view can load them by URL.
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 
 const src = new URL("../../templates/", import.meta.url);

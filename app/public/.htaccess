@@ -1,4 +1,4 @@
-# SPA: toda ruta que no sea un archivo real la resuelve index.html
+# SPA: any route that is not a real file is served by index.html
 Options -MultiViews
 RewriteEngine On
 RewriteBase /

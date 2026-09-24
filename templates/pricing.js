@@ -1,8 +1,8 @@
 // ============================================================
-// Cómo se lee y se suma cada modelo de cobro.
-// Misma regla que la vista quote_option_totals en Postgres:
-// fixed + hourly (tarifa × horas) + per_unit con cantidad = pago único;
-// monthly aparte; pass_through aparte; percentage no se suma.
+// How each pricing model is read and added up.
+// Same rule as the quote_option_totals view in Postgres:
+// fixed + hourly (rate × hours) + per_unit with quantity = one-off total;
+// monthly separate; pass_through separate; percentage is not added.
 // ============================================================
 
 import { money, t } from "./i18n.js";
@@ -40,9 +40,9 @@ export function linePrice(lang, line) {
   }
 }
 
-// Cifra principal de una opción: pago único si existe; si no, el mensual.
-// Con rangos muestra mínimo – máximo; con moneda alterna, el equivalente
-// solo si todas las líneas que suman lo tienen en la misma moneda.
+// Headline figure for an option: the one-off total if there is one; otherwise the monthly fee.
+// With ranges it shows minimum – maximum; with an alternate currency, the
+// equivalent only if every line that adds up has it in the same currency.
 export function optionHeadline(lang, option) {
   const lines = (option.lines ?? []).filter((l) => !l.is_optional);
   const oneTimeAmount = (l, price) =>
@@ -78,7 +78,7 @@ export function optionHeadline(lang, option) {
   return { amounts: [], alt: null, suffix: "" };
 }
 
-// Costos de terceros de todas las opciones, sin repetir.
+// Third-party costs across all options, without duplicates.
 export function passThroughCosts(options) {
   const seen = new Map();
   for (const o of options ?? []) {

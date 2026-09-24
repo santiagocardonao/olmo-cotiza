@@ -1,4 +1,4 @@
-// Lectura y cálculo de cotizaciones para el panel.
+// Reads quotes and computes their figures for the dashboard.
 import { supabase, ORG_ID } from "./supabase.js";
 
 export const STATUS = {
@@ -27,8 +27,8 @@ export async function listQuotes(org) {
   }));
 }
 
-// Valor de referencia: pago único de la opción recomendada (o la primera);
-// si no tiene pago único, su mensualidad.
+// Reference value: the one-off total of the recommended option (or the first one);
+// if it has no one-off total, its monthly fee.
 export function quoteValue(q) {
   const opts = [...(q.quote_options ?? [])].sort((a, b) => a.position - b.position);
   const o = opts.find((x) => x.is_recommended) ?? opts[0];
@@ -82,14 +82,14 @@ export async function setStatus(quoteId, status) {
 export async function generateQuote(input) {
   const { data, error } = await supabase.functions.invoke("generate-quote", { body: input });
   if (error) {
-    // functions-js envuelve la respuesta; recuperamos el mensaje del servidor
+    // functions-js wraps the response; recover the server's message
     let message = "No se pudo generar la cotización.";
     let details;
     try {
       const body = await error.context.json();
       message = body.error ?? message;
       details = body.details;
-    } catch { /* respuesta sin cuerpo JSON */ }
+    } catch { /* response without a JSON body */ }
     const err = new Error(message);
     err.details = details;
     throw err;

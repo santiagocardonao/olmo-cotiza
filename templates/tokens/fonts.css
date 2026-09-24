@@ -1,11 +1,11 @@
 /* ============================================================
-   Olmo — Webfonts (alojadas en el proyecto)
-   Logo:    Cal Sans — wordmark únicamente.
-   UI/body: Inter, pesos estáticos 200–700.
-   Acento:  Source Serif 4 ITÁLICA, 200–400.
-   Estáticas (no variables) a propósito: Chrome incrusta las
-   variables como Type3 sin nombre y el PDF pierde la tipografía
-   verificable. Licencia SIL OFL 1.1 (ver LICENSE-*.txt).
+   Olmo — Webfonts (self-hosted)
+   Logo:    Cal Sans — wordmark only.
+   UI/body: Inter, static weights 200–700.
+   Accent:  Source Serif 4 ITALIC, 200–400.
+   Static (not variable) on purpose: Chrome embeds variable
+   fonts as unnamed Type3, and the PDF loses verifiable
+   typography. Licensed under SIL OFL 1.1 (see LICENSE-*.txt).
    ============================================================ */
 
 @font-face { font-family: "Cal Sans"; src: url("../fonts/CalSans-Regular.ttf") format("truetype"); font-weight: 400 700; font-style: normal; font-display: block; }

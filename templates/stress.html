@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="./proposal.css"></head>
 <body><main id="doc"></main>
 <script type="module">
-  // Caso extremo sin base de datos: 3 opciones con muchas líneas.
+  // Extreme case without a database: 3 options with many lines.
   import { renderProposal } from "./proposal.js";
   const line = (label, extra = {}) => ({ label, detail: null, pricing_model: "fixed", currency: "COP", unit_price: 1200000, quantity: null, cap_quantity: null, percent: null, percent_base: null, minimum_amount: null, is_optional: false, ...extra });
   const lines = (n) => Array.from({ length: n }, (_, i) => line(`Entregable número ${i + 1} con nombre largo`));
@@ -19,7 +19,7 @@
     milestones: [{ label: "Al aprobar", percent: 40 }, { label: "A mitad", percent: 30 }, { label: "Al entregar", percent: 30 }],
   };
   document.getElementById("doc").innerHTML = renderProposal(data);
-  // Reporta páginas cuyo contenido excede la hoja
+  // Reports pages whose content overflows the sheet
   await document.fonts.ready;
   window.overflow = [...document.querySelectorAll(".page")].map((p, i) => ({ page: i + 1, over: p.scrollHeight - p.clientHeight }));
   document.title = JSON.stringify(window.overflow.filter((o) => o.over > 0));

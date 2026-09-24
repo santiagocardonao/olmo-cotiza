@@ -12,8 +12,8 @@
   --font-body:    "Inter", "Helvetica Neue", Arial, sans-serif;
   /* Emphasis: ALWAYS italic. Use for a word or two inside a heading. */
   --font-serif:   "Source Serif 4", Georgia, "Times New Roman", serif;
-  /* Script: the emphasis face (Source Serif 4, italic) — the "complejo"
-     font. Used for line 2 of a cotización/propuesta title (line 1 sans,
+  /* Script: the emphasis face (Source Serif 4, italic) — the "complex"
+     font. Used for line 2 of a quote/proposal title (line 1 sans,
      line 2 this, set italic). No separate script family. */
   --font-script:  var(--font-serif);
   --font-mono:    ui-monospace, "SF Mono", Menlo, Consolas, monospace;

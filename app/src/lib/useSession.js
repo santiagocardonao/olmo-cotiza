@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase.js";
 
-// Sesión actual + si el usuario es miembro de Olmo.
+// Current session, plus whether the user is an Olmo member.
 export function useSession() {
   const [state, setState] = useState({ loading: true, session: null, isMember: false });
 

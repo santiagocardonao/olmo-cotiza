@@ -1,8 +1,8 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
 import { renderProposal } from "../../../templates/proposal.js";
 
-// La propuesta se renderiza en un iframe: sus estilos (A4, @page) quedan
-// aislados de la app y "Descargar PDF" imprime solo la propuesta.
+// The proposal renders inside an iframe: its styles (A4, @page) stay
+// isolated from the app, and "Descargar PDF" prints only the proposal.
 export const ProposalFrame = forwardRef(function ProposalFrame({ data, title }, ref) {
   const frame = useRef(null);
 
@@ -20,7 +20,7 @@ export const ProposalFrame = forwardRef(function ProposalFrame({ data, title }, 
 <style>@media screen { body { padding: 32px 0; } }</style>
 </head><body>${renderProposal(data)}
 <script>
-  // En pantalla, la hoja A4 se escala al ancho disponible; al imprimir vuelve a 1:1.
+  // On screen the A4 sheet scales to the available width; in print it returns to 1:1.
   const A4 = 794 + 48;
   const fit = () => { document.body.style.zoom = Math.min(1, innerWidth / A4); };
   addEventListener("resize", fit);

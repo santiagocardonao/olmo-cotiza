@@ -2,11 +2,11 @@
 // generate-quote
 // POST { mode: "olmo" | "demo", client_name, prepared_for, source_text,
 //        language?, currency?, issued_on?, valid_days? }
-// → Claude estructura el texto libre → create_quote() lo guarda.
+// → Claude structures the free text → create_quote() stores it.
 //
-// mode "olmo": exige sesión; RLS decide si el usuario puede escribir.
-// mode "demo": sin sesión; guarda en la organización demo con el
-//              service role y un límite diario por visitante.
+// mode "olmo": requires a session; RLS decides whether the user may write.
+// mode "demo": no session; writes to the demo organization with the
+//              service role and a daily limit per visitor.
 // ============================================================
 
 import Anthropic from "npm:@anthropic-ai/sdk@0.128.0";
@@ -29,9 +29,9 @@ const CORS = {
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
-// Lee ANTHROPIC_API_KEY de los secrets. Si la key no está asociada a un
-// workspace, la API exige el header anthropic-workspace-id: se toma del
-// secret ANTHROPIC_WORKSPACE_ID cuando existe.
+// Reads ANTHROPIC_API_KEY from the secrets. If the key is not tied to a
+// workspace, the API requires the anthropic-workspace-id header: it is taken
+// from the ANTHROPIC_WORKSPACE_ID secret when present.
 const workspaceId = Deno.env.get("ANTHROPIC_WORKSPACE_ID");
 const anthropic = new Anthropic(
   workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : {},
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  // Cliente con el que se va a escribir: el del usuario (RLS) o el service role (demo).
+  // Client used for writes: the user's own (RLS) or the service role (demo).
   let db;
   if (mode === "olmo") {
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     if (!allowed) return json(429, { error: "La demo permite 3 cotizaciones por día. Explora las cotizaciones de ejemplo mientras tanto." });
   }
 
-  // ── Claude: texto libre → estructura validada ─────────────
+  // ── Claude: free text → validated structure ─────────────
   let draft: QuoteDraft;
   try {
     const response = await anthropic.messages.parse(
@@ -94,8 +94,8 @@ Deno.serve(async (req) => {
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage({ client_name, prepared_for, language, currency, source_text }) }],
         output_config: { format: zodOutputFormat(QuoteDraft) },
-        // Si un clasificador de seguridad declina, la API reintenta en el modelo recomendado.
-        // @ts-expect-error: `fallbacks: "default"` aún no está en los tipos del SDK
+        // If a safety classifier declines, the API retries on the recommended model.
+        // @ts-expect-error: `fallbacks: "default"` is not in the SDK types yet
         fallbacks: "default",
       },
       { headers: { "anthropic-beta": "server-side-fallback-2026-07-01" } },
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
   const problems = businessErrors(draft);
   if (problems.length) return json(422, { error: "La cotización generada no es consistente.", details: problems, draft });
 
-  // ── Guardar en una sola transacción ──────────────────────
+  // ── Save in a single transaction ──────────────────────
   const { data: created, error: saveError } = await db.rpc("create_quote", {
     payload: {
       org_id: ORG[mode],

@@ -18,7 +18,7 @@
   --grad-brand:    linear-gradient(98deg, #7C3AED 0%, #4338CA 60%, #312E81 100%); /* @kind color */
   --grad-button:   linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); /* @kind color */
   --grad-icon:     linear-gradient(150deg, #8B7BF0 0%, #5B45C0 100%); /* @kind color */
-  /* Cover fill — PORTADA & CONTRAPORTADA use this RADIAL gradient, never a flat color. Same gradient for both. */
+  /* Cover fill — COVER & BACK COVER use this RADIAL gradient, never a flat color. Same gradient for both. */
   --grad-cover:    radial-gradient(120% 120% at 15% 12%, #8B5CF6 0%, #6D28D9 38%, #4338CA 68%, #312E81 100%); /* @kind color */
 
   /* --- Ink & neutrals -------------------------------------- */

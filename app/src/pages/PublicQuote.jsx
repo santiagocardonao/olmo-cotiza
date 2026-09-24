@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { ProposalFrame } from "../components/ProposalFrame.jsx";
 import { getQuote } from "../lib/quotes.js";
 
-// Lo que ve el cliente: la propuesta y un botón para guardarla.
+// What the client sees: the proposal and a button to save it.
 export function PublicQuote() {
   const { slug } = useParams();
   const [data, setData] = useState(undefined);

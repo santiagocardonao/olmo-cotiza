@@ -1,4 +1,4 @@
-// Ejemplos ficticios para "Llenar con ejemplo" en la demo.
+// Fictional examples for the demo's "Llenar con ejemplo" (fill with example) button.
 export const EXAMPLES = [
   {
     client_name: "Panadería Brote",

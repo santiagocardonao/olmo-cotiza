@@ -1,8 +1,8 @@
 // ============================================================
-// Propuesta completa: portada, intro, alcance, inversión, proceso
-// y contraportada. Recibe la forma que devuelve get_public_quote():
+// Full proposal: cover, intro, scope, investment, process
+// and back cover. Takes the shape returned by get_public_quote():
 //   { quote, client, options: [{..., lines: [...]}], milestones }
-// Sin dependencias: corre en el navegador y en una Edge Function.
+// No dependencies: runs in the browser and in an Edge Function.
 // ============================================================
 
 import { renderCover } from "./cover.js";
@@ -35,7 +35,7 @@ export function renderProposal(data) {
   return [renderCover(quote, client), ...pages, backCover(lang, quote, copy)].join("\n");
 }
 
-// ── Estructura común de páginas internas ─────────────────────
+// ── Shared structure of inner pages ─────────────────────
 function interior(docTitle, body, pageNumber) {
   return `
 <section class="page interior">
@@ -72,7 +72,7 @@ function introPage(lang, copy) {
   ${cards ? `<div class="grid grid--3 push-bottom">${cards}</div>` : ""}`;
 }
 
-// ── Diagnóstico ──────────────────────────────────────────────
+// ── Diagnosis ──────────────────────────────────────────────
 function diagnosisPage(lang, d) {
   const points = (d.points ?? []).slice(0, 4).map((p) => `
     <div class="card">
@@ -86,7 +86,7 @@ function diagnosisPage(lang, d) {
   ${points ? `<div class="grid grid--2">${points}</div>` : ""}`;
 }
 
-// ── Condiciones ──────────────────────────────────────────────
+// ── Terms ──────────────────────────────────────────────
 function conditionsPage(lang, conditions) {
   const cards = conditions.slice(0, 6).map((c) => `
     <div class="card">
@@ -99,7 +99,7 @@ function conditionsPage(lang, conditions) {
   <div class="grid grid--2">${cards}</div>`;
 }
 
-// ── Alcance ──────────────────────────────────────────────────
+// ── Scope ──────────────────────────────────────────────────
 function scopePage(lang, copy) {
   const list = (items, kind) => `<ul class="checklist checklist--${kind}">${items.map((i) => `<li>${e(i)}</li>`).join("")}</ul>`;
   return `
@@ -122,29 +122,29 @@ function scopePage(lang, copy) {
   </div>` : ""}`;
 }
 
-// ── Inversión ────────────────────────────────────────────────
-// Las hojas A4 tienen alto fijo, así que el reparto se decide antes de
-// renderizar con una estimación de alto por tarjeta (en px de pantalla).
-const BODY_HEIGHT = 780;        // alto útil de una página interna bajo el título
-const CARD_BASE = 175;          // tarjeta de opción sin líneas
-const CARD_LINE = 44;           // cada línea dentro de la tarjeta
-const TERMS_HEIGHT = 230;       // forma de pago + costos de terceros
+// ── Investment ────────────────────────────────────────────────
+// A4 sheets have a fixed height, so the layout is decided before
+// rendering, using an estimated height per card (in screen px).
+const BODY_HEIGHT = 780;        // usable height of an inner page below the title
+const CARD_BASE = 175;          // option card with no lines
+const CARD_LINE = 44;           // each line inside the card
+const TERMS_HEIGHT = 230;       // payment terms + third-party costs
 const GAP = 16;
-const TWO_COL_LINES = 12;       // más líneas que esto: la tarjeta las reparte en 2 columnas
+const TWO_COL_LINES = 12;       // more lines than this: the card splits them into 2 columns
 
 function investmentPages(lang, options, milestones, examples) {
   const cols = options.length >= 3 ? 3 : options.length === 2 ? 2 : 1;
   const lineCount = (o) => (o.lines ?? []).filter((l) => l.pricing_model !== "pass_through").length;
   const visibleLines = (o) => (cols === 1 && lineCount(o) > TWO_COL_LINES ? Math.ceil(lineCount(o) / 2) : lineCount(o));
 
-  // Filas de tarjetas y su alto estimado
+  // Card rows and their estimated height
   const rows = [];
   for (let i = 0; i < options.length; i += cols) {
     const row = options.slice(i, i + cols).map((o, j) => ({ o, index: i + j }));
     rows.push({ row, height: CARD_BASE + CARD_LINE * Math.max(...row.map(({ o }) => visibleLines(o))) });
   }
 
-  // Agrupar filas en páginas
+  // Group rows into pages
   const pages = [];
   let current = [], used = 0;
   for (const r of rows) {
@@ -254,14 +254,14 @@ function firstOneTimeTotal(options) {
     const a = l.pricing_model === "fixed" ? Number(l.unit_price)
       : (l.pricing_model === "hourly" || l.pricing_model === "per_unit") && l.quantity ? Number(l.unit_price) * Number(l.quantity) : 0;
     if (!a) continue;
-    if (currency && currency !== l.currency) return null; // monedas mezcladas: se muestran porcentajes
+    if (currency && currency !== l.currency) return null; // mixed currencies: show percentages
     currency = l.currency;
     amount += a;
   }
   return amount ? { amount, currency, option: o } : null;
 }
 
-// ── Proceso ──────────────────────────────────────────────────
+// ── Process ──────────────────────────────────────────────────
 function processPage(lang, copy) {
   const list = copy.process.slice(0, 8);
   const steps = list.map((s, i) => `
@@ -276,7 +276,7 @@ function processPage(lang, copy) {
   <div class="grid ${list.length > 4 ? "grid--2 steps--compact" : "grid--2"}">${steps}</div>`;
 }
 
-// ── Contraportada ────────────────────────────────────────────
+// ── Back cover ────────────────────────────────────────────
 function backCover(lang, quote, copy) {
   const closing = copy.closing ?? {};
   const issued = longDate(lang, quote.issued_on);

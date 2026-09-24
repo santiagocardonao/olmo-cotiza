@@ -1,12 +1,12 @@
 -- ============================================================
--- Endurecimiento tras los avisos de Supabase (23 sep 2026)
--- 1. Las funciones de RLS salen de `public` (expuesto por la API)
---    a `private` (no expuesto). Siguen siendo ejecutables por
---    anon/authenticated porque las políticas las evalúan como ellos.
--- 2. Una sola política SELECT por tabla y rol: las de escritura
---    se separan en insert/update/delete.
--- 3. rls_auto_enable() preexistía en el proyecto y era invocable
---    por anon vía /rest/v1/rpc; se revoca.
+-- Hardening after the Supabase advisors (23 Sep 2026)
+-- 1. RLS helper functions move from `public` (exposed by the API)
+--    to `private` (not exposed). They stay executable by
+--    anon/authenticated because the policies evaluate them as those roles.
+-- 2. A single SELECT policy per table and role: write policies
+--    are split into insert/update/delete.
+-- 3. rls_auto_enable() pre-existed in the project and was callable
+--    by anon through /rest/v1/rpc; execution is revoked.
 -- ============================================================
 
 create schema if not exists private;
@@ -45,7 +45,7 @@ $$;
 revoke execute on all functions in schema private from public;
 grant execute on all functions in schema private to anon, authenticated;
 
--- ── Reemplazar políticas ─────────────────────────────────────
+-- ── Replace policies ─────────────────────────────────────
 drop policy "orgs: read own or demo" on public.organizations;
 drop policy "clients: read" on public.clients;
 drop policy "clients: write members" on public.clients;
@@ -100,7 +100,7 @@ create policy "milestones: insert" on public.payment_milestones for insert to au
 create policy "milestones: update" on public.payment_milestones for update to authenticated using (private.is_member(private.quote_org(quote_id))) with check (private.is_member(private.quote_org(quote_id)));
 create policy "milestones: delete" on public.payment_milestones for delete to authenticated using (private.is_member(private.quote_org(quote_id)));
 
--- quote_events: solo miembros leen
+-- quote_events: members only read
 create policy "events: read" on public.quote_events
   for select to authenticated using (private.is_member(private.quote_org(quote_id)));
 
@@ -110,10 +110,10 @@ create policy "versions: insert" on public.quote_versions for insert to authenti
 create policy "versions: update" on public.quote_versions for update to authenticated using (private.is_member(private.quote_org(quote_id))) with check (private.is_member(private.quote_org(quote_id)));
 create policy "versions: delete" on public.quote_versions for delete to authenticated using (private.is_member(private.quote_org(quote_id)));
 
--- ── Índice faltante ──────────────────────────────────────────
+-- ── Missing index ──────────────────────────────────────────
 create index quotes_created_by_idx on public.quotes(created_by);
 
--- ── Función preexistente del proyecto ────────────────────────
+-- ── Pre-existing project function ────────────────────────
 do $$
 begin
   if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace

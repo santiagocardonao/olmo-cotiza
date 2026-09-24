@@ -1,26 +1,26 @@
 -- ============================================================
--- Olmo Cotiza — esquema inicial
--- Una cotización tiene opciones; cada opción tiene líneas con su
--- propio modelo de cobro, unidad y moneda. Organizaciones separan
--- los datos reales (Olmo, privada) de la demo (pública, ficticia).
+-- Olmo Cotiza — initial schema
+-- A quote has options; each option has lines with their own
+-- pricing model, unit and currency. Organizations keep the real
+-- data (Olmo, private) apart from the demo (public, fictional).
 -- ============================================================
 
--- ── Tipos ────────────────────────────────────────────────────
+-- ── Types ────────────────────────────────────────────────────
 create type public.quote_status as enum ('draft', 'sent', 'accepted', 'rejected', 'expired');
 create type public.quote_language as enum ('es', 'en');
 create type public.currency_code as enum ('COP', 'USD', 'EUR');
 create type public.pricing_model as enum (
-  'fixed',        -- precio cerrado
-  'hourly',       -- por hora, con techo opcional
-  'monthly',      -- fijo mensual
-  'per_unit',     -- por unidad (página, módulo, quiz)
-  'percentage',   -- porcentaje sobre una base (ej. pagos procesados)
-  'pass_through'  -- costo de terceros, se paga directo al proveedor
+  'fixed',        -- fixed price
+  'hourly',       -- per hour, with an optional cap
+  'monthly',      -- fixed monthly fee
+  'per_unit',     -- per unit (page, module, quiz)
+  'percentage',   -- percentage of a base (e.g. processed payments)
+  'pass_through'  -- third-party cost, paid directly to the vendor
 );
 create type public.member_role as enum ('owner', 'editor');
 create type public.quote_event_type as enum ('created', 'sent', 'viewed', 'accepted', 'rejected');
 
--- ── Organizaciones y membresías ──────────────────────────────
+-- ── Organizations and memberships ──────────────────────────────
 create table public.organizations (
   id          uuid primary key default gen_random_uuid(),
   slug        text not null unique check (slug ~ '^[a-z0-9-]+$'),
@@ -38,7 +38,7 @@ create table public.memberships (
 );
 create index memberships_user_idx on public.memberships(user_id);
 
--- ── Clientes ─────────────────────────────────────────────────
+-- ── Clients ─────────────────────────────────────────────────
 create table public.clients (
   id          uuid primary key default gen_random_uuid(),
   org_id      uuid not null references public.organizations(id) on delete cascade,
@@ -49,25 +49,25 @@ create table public.clients (
 );
 create index clients_org_idx on public.clients(org_id);
 
--- ── Cotizaciones ─────────────────────────────────────────────
+-- ── Quotes ─────────────────────────────────────────────
 create table public.quotes (
   id            uuid primary key default gen_random_uuid(),
   org_id        uuid not null references public.organizations(id) on delete cascade,
   client_id     uuid not null references public.clients(id) on delete restrict,
-  -- enlace público no adivinable: /p/<public_slug>
+  -- unguessable public link: /p/<public_slug>
   public_slug   text not null unique default encode(extensions.gen_random_bytes(9), 'hex'),
   prepared_for  text not null,                 -- "Sofía", "Laura y Tomás"
-  title         text not null,                 -- línea 1 de la portada
-  title_accent  text,                          -- línea 2, serif itálica
-  summary       text,                          -- bajada de portada
+  title         text not null,                 -- cover line 1
+  title_accent  text,                          -- cover line 2, italic serif
+  summary       text,                          -- cover subtitle
   language      public.quote_language not null default 'es',
-  currency      public.currency_code not null default 'COP',  -- moneda principal
+  currency      public.currency_code not null default 'COP',  -- main currency
   status        public.quote_status not null default 'draft',
   issued_on     date not null default current_date,
   valid_days    smallint not null default 15 check (valid_days in (8, 15, 30)),
   expires_on    date generated always as (issued_on + valid_days) stored,
-  source_text   text,                          -- texto libre original que escribió el usuario
-  copy          jsonb not null default '{}'::jsonb,  -- textos redactados: intro, cierre, método
+  source_text   text,                          -- the original free text the user wrote
+  copy          jsonb not null default '{}'::jsonb,  -- drafted copy: intro, closing, method
   created_by    uuid references auth.users(id) on delete set null,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
@@ -76,7 +76,7 @@ create index quotes_org_idx on public.quotes(org_id);
 create index quotes_client_idx on public.quotes(client_id);
 create index quotes_status_expires_idx on public.quotes(status, expires_on);
 
--- ── Opciones (lado a lado; una puede ser la recomendada) ─────
+-- ── Options (side by side; one may be the recommended one) ─────
 create table public.quote_options (
   id              uuid primary key default gen_random_uuid(),
   quote_id        uuid not null references public.quotes(id) on delete cascade,
@@ -87,11 +87,11 @@ create table public.quote_options (
   unique (quote_id, position)
 );
 create index quote_options_quote_idx on public.quote_options(quote_id);
--- como máximo una opción recomendada por cotización
+-- at most one recommended option per quote
 create unique index quote_options_one_recommended
   on public.quote_options(quote_id) where is_recommended;
 
--- ── Líneas: cada una con su modelo de cobro ──────────────────
+-- ── Lines: each with its own pricing model ──────────────────
 create table public.quote_lines (
   id              uuid primary key default gen_random_uuid(),
   option_id       uuid not null references public.quote_options(id) on delete cascade,
@@ -100,12 +100,12 @@ create table public.quote_lines (
   detail          text,
   pricing_model   public.pricing_model not null,
   currency        public.currency_code not null,
-  unit_price      numeric(14,2),               -- precio, tarifa hora, mensualidad, precio unidad
-  quantity        numeric(10,2),               -- horas estimadas, unidades
-  cap_quantity    numeric(10,2),               -- techo de horas/unidades
-  percent         numeric(5,2),                -- solo 'percentage'
+  unit_price      numeric(14,2),               -- price, hourly rate, monthly fee, unit price
+  quantity        numeric(10,2),               -- estimated hours, units
+  cap_quantity    numeric(10,2),               -- cap on hours/units
+  percent         numeric(5,2),                -- 'percentage' only
   percent_base    text,                        -- "pagos procesados"
-  minimum_amount  numeric(14,2),               -- mínimo para 'percentage'
+  minimum_amount  numeric(14,2),               -- minimum for 'percentage'
   is_optional     boolean not null default false,
   unique (option_id, position),
   constraint line_fields_match_model check (
@@ -122,7 +122,7 @@ create table public.quote_lines (
 );
 create index quote_lines_option_idx on public.quote_lines(option_id);
 
--- ── Hitos de pago ────────────────────────────────────────────
+-- ── Payment milestones ────────────────────────────────────────────
 create table public.payment_milestones (
   id        uuid primary key default gen_random_uuid(),
   quote_id  uuid not null references public.quotes(id) on delete cascade,
@@ -133,7 +133,7 @@ create table public.payment_milestones (
 );
 create index payment_milestones_quote_idx on public.payment_milestones(quote_id);
 
--- ── Eventos (envío, apertura del enlace, aceptación) ────────
+-- ── Events (sent, link opened, accepted) ────────
 create table public.quote_events (
   id          bigint generated always as identity primary key,
   quote_id    uuid not null references public.quotes(id) on delete cascade,
@@ -143,7 +143,7 @@ create table public.quote_events (
 );
 create index quote_events_quote_idx on public.quote_events(quote_id, occurred_at desc);
 
--- ── Versiones renderizadas (HTML/PDF en Storage) ────────────
+-- ── Rendered versions (HTML/PDF in Storage) ────────────
 create table public.quote_versions (
   id          uuid primary key default gen_random_uuid(),
   quote_id    uuid not null references public.quotes(id) on delete cascade,
@@ -165,9 +165,9 @@ end $$;
 create trigger quotes_touch before update on public.quotes
   for each row execute function public.touch_updated_at();
 
--- ── Totales por opción (solo lo que se puede sumar) ─────────
--- 'fixed' + 'hourly' (tarifa × horas) + 'per_unit' con cantidad = pago único.
--- 'monthly' y 'pass_through' se reportan aparte; 'percentage' no se suma.
+-- ── Totals per option (only what can be added up) ─────────
+-- 'fixed' + 'hourly' (rate × hours) + 'per_unit' with quantity = one-off total.
+-- 'monthly' and 'pass_through' are reported separately; 'percentage' is not added.
 create view public.quote_option_totals
 with (security_invoker = true) as
 select
@@ -185,10 +185,10 @@ join public.quote_lines l on l.option_id = o.id
 group by o.id, o.quote_id, l.currency;
 
 -- ============================================================
--- Seguridad (RLS)
--- Miembros ven y editan su organización. Cualquiera, incluso sin
--- sesión, puede LEER la organización demo. Escribir en la demo
--- solo ocurre desde la Edge Function (service role, con límite).
+-- Security (RLS)
+-- Members see and edit their own organization. Anyone, even without
+-- a session, can READ the demo organization. Writes to the demo
+-- only happen through the Edge Function (service role, rate-limited).
 -- ============================================================
 create function public.is_member(target_org uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
@@ -234,7 +234,7 @@ create policy "orgs: read own or demo" on public.organizations
   for select to anon, authenticated
   using (is_demo or public.is_member(id));
 
--- memberships: cada quien ve las suyas
+-- memberships: each user sees their own
 create policy "memberships: read own" on public.memberships
   for select to authenticated
   using (user_id = (select auth.uid()));
@@ -282,8 +282,8 @@ create policy "milestones: write members" on public.payment_milestones
   using (public.is_member(public.quote_org(quote_id)))
   with check (public.is_member(public.quote_org(quote_id)));
 
--- quote_events: solo miembros los leen; las aperturas de enlace
--- las registra la Edge Function del enlace público.
+-- quote_events: only members read them; link opens are
+-- recorded by the public-link Edge Function.
 create policy "events: read members" on public.quote_events
   for select to authenticated
   using (public.is_member(public.quote_org(quote_id)));

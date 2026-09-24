@@ -1,7 +1,7 @@
 -- ============================================================
--- Estructuras de cobro vistas en las propuestas reales de Olmo:
--- - Precio equivalente en otra moneda ("$2.700.000 ó 1.860 USD")
--- - Rangos ("$2.800.000 – $4.200.000 COP")
+-- Pricing structures seen in Olmo's real proposals:
+-- - Equivalent price in another currency ("$2.700.000 ó 1.860 USD")
+-- - Ranges ("$2.800.000 – $4.200.000 COP")
 -- ============================================================
 alter table public.quote_lines
   add column alt_currency   public.currency_code,
@@ -14,7 +14,7 @@ alter table public.quote_lines
 comment on column public.quote_lines.alt_unit_price is 'Mismo precio expresado en otra moneda, a elección del cliente.';
 comment on column public.quote_lines.unit_price_max is 'Si existe, el precio es un rango unit_price – unit_price_max.';
 
--- create_quote() guarda los campos nuevos
+-- create_quote() stores the new fields
 create or replace function public.create_quote(payload jsonb)
 returns jsonb
 language plpgsql

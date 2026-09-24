@@ -1,12 +1,12 @@
 -- ============================================================
--- Enlace público, vencimiento automático, acceso del dueño y
--- límite de uso de la demo.
+-- Public link, automatic expiry, owner access and
+-- demo usage limit.
 -- ============================================================
 
--- ── Enlace público /p/<slug> ─────────────────────────────────
--- Cualquier cotización (demo o real) se puede abrir con su slug,
--- que no es adivinable. Devuelve la cotización completa como JSON
--- y registra la apertura. Borradores no se exponen.
+-- ── Public link /p/<slug> ─────────────────────────────────
+-- Any quote (demo or real) can be opened with its slug,
+-- which is unguessable. Returns the full quote as JSON
+-- and records the open. Drafts are never exposed.
 create function public.get_public_quote(slug text)
 returns jsonb
 language plpgsql
@@ -23,7 +23,7 @@ begin
     return null;
   end if;
 
-  -- Solo cuenta como apertura si quien mira no es miembro de la organización.
+  -- Only counts as an open if the viewer is not a member of the organization.
   if not private.is_member(q.org_id) then
     insert into public.quote_events (quote_id, type) values (q.id, 'viewed');
   end if;
@@ -50,7 +50,7 @@ end $$;
 revoke execute on function public.get_public_quote(text) from public;
 grant execute on function public.get_public_quote(text) to anon, authenticated;
 
--- ── Vencimiento automático ──────────────────────────────────
+-- ── Automatic expiry ──────────────────────────────────
 create function private.expire_quotes() returns integer
 language sql security definer set search_path = '' as $$
   with done as (
@@ -62,11 +62,11 @@ $$;
 revoke execute on function private.expire_quotes() from public, anon, authenticated;
 
 create extension if not exists pg_cron;
-select cron.schedule('expire-quotes', '5 5 * * *', 'select private.expire_quotes()');  -- 00:05 hora Colombia
+select cron.schedule('expire-quotes', '5 5 * * *', 'select private.expire_quotes()');  -- 00:05 Colombia time
 
--- ── Dueño de Olmo ───────────────────────────────────────────
--- Al registrarse con el correo del dueño, queda como owner de la
--- organización privada. Cualquier otro registro solo ve la demo.
+-- ── Olmo owner ───────────────────────────────────────────
+-- Signing up with the owner's email makes that account owner of the
+-- private organization. Any other sign-up only sees the demo.
 create table private.org_owners (
   email   text primary key,
   org_id  uuid not null references public.organizations(id) on delete cascade
@@ -88,9 +88,9 @@ create trigger on_auth_user_created_grant_owner
   after insert on auth.users
   for each row execute function private.grant_owner_membership();
 
--- ── Límite de uso de la demo ────────────────────────────────
--- La Edge Function registra cada generación en la demo y rechaza
--- pasado el límite. Solo el service role escribe aquí.
+-- ── Demo usage limit ────────────────────────────────
+-- The Edge Function records every demo generation and rejects
+-- requests past the limit. Only the service role writes here.
 create table private.demo_generations (
   id          bigint generated always as identity primary key,
   client_hash text not null,

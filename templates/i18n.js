@@ -1,4 +1,4 @@
-// Textos fijos de las plantillas, por idioma de la cotización.
+// Fixed template copy, per quote language.
 
 const STRINGS = {
   es: {
@@ -127,7 +127,7 @@ export function longDate(lang, iso) {
   return t(lang, "longDate", d, t(lang, "months")[m - 1], y);
 }
 
-// COP y EUR sin decimales con punto de miles; USD con decimales solo si los hay.
+// COP and EUR without decimals, with a dot as thousands separator; USD with decimals only when present.
 export function money(amount, currency) {
   const n = Number(amount);
   if (currency === "COP") return `$${n.toLocaleString("es-CO", { maximumFractionDigits: 0 })} COP`;

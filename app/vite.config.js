@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Las plantillas de la propuesta viven en ../templates y se comparten
-// con la Edge Function; la app las importa desde ahí.
+// The proposal templates live in ../templates and are shared
+// with the Edge Function; the app imports them from there.
 export default defineConfig({
   plugins: [react()],
   server: { port: 5173, fs: { allow: [".."] } },
