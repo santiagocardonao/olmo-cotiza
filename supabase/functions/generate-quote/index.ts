@@ -29,13 +29,12 @@ const CORS = {
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
-// Reads ANTHROPIC_API_KEY from the secrets. If the key is not tied to a
-// workspace, the API requires the anthropic-workspace-id header: it is taken
-// from the ANTHROPIC_WORKSPACE_ID secret when present.
-const workspaceId = Deno.env.get("ANTHROPIC_WORKSPACE_ID");
-const anthropic = new Anthropic(
-  workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : {},
-);
+// Reads ANTHROPIC_API_KEY from the secrets. The key is not tied to a
+// workspace, so the API requires the anthropic-workspace-id header.
+// The ID is not secret: defaults to the "Default" workspace; the
+// ANTHROPIC_WORKSPACE_ID secret overrides it.
+const workspaceId = Deno.env.get("ANTHROPIC_WORKSPACE_ID") ?? "wrkspc_019ULFQphQs4KMRPeUB6NRLu";
+const anthropic = new Anthropic({ defaultHeaders: { "anthropic-workspace-id": workspaceId } });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -110,7 +109,10 @@ Deno.serve(async (req) => {
     draft = response.parsed_output;
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) return json(429, { error: "Demasiadas solicitudes al modelo. Espera un minuto." });
-    if (err instanceof Anthropic.AuthenticationError) return json(500, { error: "Falta configurar la API key de Anthropic en Supabase." });
+    if (err instanceof Anthropic.AuthenticationError) {
+      console.error("anthropic auth", err.status, err.message);
+      return json(500, { error: "La API key de Anthropic no es válida para este workspace.", details: err.message });
+    }
     if (err instanceof Anthropic.APIError) {
       console.error("anthropic", err.status, err.message);
       return json(502, { error: `Error del modelo (${err.status}).`, details: err.message });
