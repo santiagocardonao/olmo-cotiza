@@ -29,7 +29,13 @@ const CORS = {
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
-const anthropic = new Anthropic(); // lee ANTHROPIC_API_KEY de los secrets
+// Lee ANTHROPIC_API_KEY de los secrets. Si la key no está asociada a un
+// workspace, la API exige el header anthropic-workspace-id: se toma del
+// secret ANTHROPIC_WORKSPACE_ID cuando existe.
+const workspaceId = Deno.env.get("ANTHROPIC_WORKSPACE_ID");
+const anthropic = new Anthropic(
+  workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : {},
+);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -105,8 +111,12 @@ Deno.serve(async (req) => {
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) return json(429, { error: "Demasiadas solicitudes al modelo. Espera un minuto." });
     if (err instanceof Anthropic.AuthenticationError) return json(500, { error: "Falta configurar la API key de Anthropic en Supabase." });
-    if (err instanceof Anthropic.APIError) return json(502, { error: `Error del modelo (${err.status}).` });
-    return json(500, { error: "Error inesperado al generar la cotización." });
+    if (err instanceof Anthropic.APIError) {
+      console.error("anthropic", err.status, err.message);
+      return json(502, { error: `Error del modelo (${err.status}).`, details: err.message });
+    }
+    console.error("generate-quote", err);
+    return json(500, { error: "Error inesperado al generar la cotización.", details: String(err) });
   }
 
   const problems = businessErrors(draft);
