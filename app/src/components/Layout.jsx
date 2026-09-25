@@ -20,7 +20,7 @@ export function Shell({ mode, session, children }) {
       </header>
       {mode === "demo" && (
         <div className="demo-banner">
-          Estás en la demo pública: todos los clientes y precios son ficticios. Los datos reales de Olmo viven en una organización privada que esta vista no puede leer (RLS).
+          Estás en la demo pública: todos los clientes y precios son ficticios. Las cotizaciones reales de Olmo están en un espacio privado que esta vista no puede ver.
         </div>
       )}
       <main className="page-body">{children}</main>

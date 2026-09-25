@@ -108,24 +108,24 @@ Deno.serve(async (req) => {
     ]);
 
     if (pricing.stop_reason === "refusal" || copy.stop_reason === "refusal") {
-      return json(422, { error: "El modelo no pudo procesar esta descripción. Reformúlala e intenta de nuevo." });
+      return json(422, { error: "No pudimos procesar esta descripción. Reformúlala e intenta de nuevo." });
     }
     if (!pricing.parsed_output || !copy.parsed_output) {
-      return json(502, { error: "La respuesta del modelo quedó incompleta. Intenta de nuevo." });
+      return json(502, { error: "La propuesta quedó incompleta. Intenta de nuevo." });
     }
     draft = { ...pricing.parsed_output, copy: copy.parsed_output };
   } catch (err) {
-    if (err instanceof Anthropic.RateLimitError) return json(429, { error: "Demasiadas solicitudes al modelo. Espera un minuto." });
+    if (err instanceof Anthropic.RateLimitError) return json(429, { error: "Hay muchas solicitudes en este momento. Espera un minuto." });
     if (err instanceof Anthropic.AuthenticationError) {
       console.error("anthropic auth", err.status, err.message);
-      return json(500, { error: "La API key de Anthropic no es válida para este workspace.", details: err.message });
+      return json(503, { error: "El servicio no está disponible en este momento. Intenta más tarde." });
     }
     if (err instanceof Anthropic.APIError) {
       console.error("anthropic", err.status, err.message);
-      return json(502, { error: `Error del modelo (${err.status}).`, details: err.message });
+      return json(502, { error: "No se pudo generar la propuesta. Intenta de nuevo." });
     }
     console.error("generate-quote", err);
-    return json(500, { error: "Error inesperado al generar la cotización.", details: String(err) });
+    return json(500, { error: "Error inesperado al generar la cotización." });
   }
 
   const problems = businessErrors(draft);
@@ -150,7 +150,10 @@ Deno.serve(async (req) => {
       milestones: draft.milestones,
     },
   });
-  if (saveError) return json(mode === "olmo" ? 403 : 500, { error: "No se pudo guardar la cotización.", details: saveError.message });
+  if (saveError) {
+    console.error("create_quote", saveError.message);
+    return json(mode === "olmo" ? 403 : 500, { error: "No se pudo guardar la cotización." });
+  }
 
   return json(200, created);
 });

@@ -25,7 +25,7 @@ export function Home({ session, isMember }) {
       <div className="home__hero">
         <span className="wordmark wordmark--lg">olmo</span>
         <h1 className="display">Cotizaciones que se <em>escriben solas</em>,<br />y datos que se quedan.</h1>
-        <p className="lead">Escribe el alcance y los precios en texto libre. Claude lo estructura, las plantillas de Olmo lo diseñan y Supabase lo guarda: cuánto cotizaste, a quién, qué se abrió y qué se cerró.</p>
+        <p className="lead">Escribe el alcance y los precios en texto libre. Olmo Cotiza lo ordena, le pone el diseño de Olmo y guarda el historial: cuánto cotizaste, a quién, qué se abrió y qué se cerró.</p>
         <div className="home__actions">
           <Link to="/demo" className="btn btn--primary">Ver la demo</Link>
         </div>

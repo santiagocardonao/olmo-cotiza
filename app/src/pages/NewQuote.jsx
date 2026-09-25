@@ -37,8 +37,8 @@ export function NewQuote({ mode }) {
     <>
       <div className="page-head">
         <span className="pill">Nueva cotización</span>
-        <h1 className="h1">Escribe el alcance. <em>Claude arma el resto.</em></h1>
-        <p className="lead">Precios, opciones y condiciones en texto libre. Claude los convierte en datos y redacta la propuesta; el diseño lo ponen las plantillas de Olmo. No inventa precios: lo que no escribas queda como "por definir".</p>
+        <h1 className="h1">Escribe el alcance. <em>Nosotros armamos el resto.</em></h1>
+        <p className="lead">Precios, opciones y condiciones en texto libre. Olmo Cotiza los ordena y redacta la propuesta con el diseño de Olmo. No inventa precios: lo que no escribas queda como "por definir".</p>
       </div>
 
       <form className="card form" onSubmit={submit}>

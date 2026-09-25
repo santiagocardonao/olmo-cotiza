@@ -43,7 +43,7 @@ export function Dashboard({ mode }) {
       {quotes.length === 0 ? (
         <div className="card empty">
           <h3>Todavía no hay cotizaciones.</h3>
-          <p className="muted">Escribe el alcance y los precios en texto libre y Claude arma la propuesta.</p>
+          <p className="muted">Escribe el alcance y los precios en texto libre y Olmo Cotiza arma la propuesta.</p>
           <Link to={`${base}/nueva`} className="btn btn--primary">Crear la primera</Link>
         </div>
       ) : (
