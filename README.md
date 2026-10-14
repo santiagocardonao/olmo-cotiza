@@ -4,6 +4,16 @@ A quote generator built on Supabase. You write the scope and the prices in free 
 
 **Live:** [cotiza.olmo.agency](https://cotiza.olmo.agency) · [public demo](https://cotiza.olmo.agency/demo) (fictional data)
 
+![A generated proposal: the internal view with PDF and client link on the left, the branded A4 page on the right](docs/img/proposal.png)
+
+<table><tr>
+<td width="50%"><img src="docs/img/landing.png" alt="Olmo Cotiza landing page"></td>
+<td width="50%"><img src="docs/img/dashboard-demo.png" alt="Quotes dashboard in the public demo: close rate, average ticket, open and unopened quotes (fictional data)"></td>
+</tr><tr>
+<td><sub>Landing and team access</sub></td>
+<td><sub>Quotes dashboard, public demo with fictional data</sub></td>
+</tr></table>
+
 The interface is in Spanish because its users and clients are in Colombia. Proposals are generated in Spanish or English.
 
 ## How it works
