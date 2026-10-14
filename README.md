@@ -51,7 +51,7 @@ app/                   Vite + React: dashboard, new quote, detail, client view
 cd app
 npm install
 npm run dev      # syncs templates/ into public/proposal and starts Vite
-npm run deploy   # build + rsync to SiteGround over SSH
+npm run deploy   # build + rsync to SiteGround (cp .env.deploy.example .env.deploy first)
 ```
 
 The Edge Function needs the `ANTHROPIC_API_KEY` secret in Supabase.
