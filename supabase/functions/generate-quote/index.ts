@@ -1,18 +1,19 @@
 // ============================================================
 // generate-quote
 // POST { mode: "olmo" | "demo", client_name, prepared_for, source_text,
-//        language?, currency?, issued_on?, valid_days? }
+//        language?, currency?, issued_on?, valid_days?, email?, consent? }
 // → Claude structures the free text → create_quote() stores it.
 //
-// mode "olmo": requires a session; RLS decides whether the user may write.
-// mode "demo": no session; writes to the demo organization with the
-//              service role and a daily limit per visitor.
+// mode "olmo": requires a session of an Olmo member.
+// mode "demo": no session but an email; writes to the demo organization
+//              with the service role, with daily limits per email,
+//              per visitor and in total.
 // ============================================================
 
 import Anthropic from "npm:@anthropic-ai/sdk@0.128.0";
 import { zodOutputFormat } from "npm:@anthropic-ai/sdk@0.128.0/helpers/zod";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { businessErrors, CopyDraft, PricingDraft, type QuoteDraft } from "./schema.ts";
+import { businessErrors, CopyDraft, normalizeMilestones, PricingDraft, type QuoteDraft } from "./schema.ts";
 import { SYSTEM_PROMPT, userMessage } from "./prompt.ts";
 
 const ORG = {
@@ -54,12 +55,15 @@ Deno.serve(async (req) => {
   const language = input.language === "en" ? "en" : "es";
   const currency = ["COP", "USD", "EUR"].includes(String(input.currency)) ? String(input.currency) as "COP" | "USD" | "EUR" : "COP";
   const valid_days = [8, 15, 30].includes(Number(input.valid_days)) ? Number(input.valid_days) : 15;
+  const email = String(input.email ?? "").trim().toLowerCase();
+  const consent = input.consent === true;
   const issued_on = /^\d{4}-\d{2}-\d{2}$/.test(String(input.issued_on ?? "")) ? String(input.issued_on) : undefined;
 
   if (!client_name || !prepared_for || source_text.length < 20) {
     return json(400, { error: "Faltan datos: cliente, destinatario y una descripción de al menos 20 caracteres." });
   }
   if (source_text.length > 8000) return json(400, { error: "La descripción es demasiado larga (máx. 8.000 caracteres)." });
+  if (client_name.length > 200 || prepared_for.length > 200) return json(400, { error: "El cliente y el destinatario admiten máx. 200 caracteres." });
 
   const url = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -72,14 +76,22 @@ Deno.serve(async (req) => {
     db = createClient(url, anonKey, { global: { headers: { Authorization: authHeader } } });
     const { data, error } = await db.auth.getUser();
     if (error || !data.user) return json(401, { error: "Inicia sesión para crear cotizaciones de Olmo." });
+    // Any e-mail can get a session (OTP sign-in creates the user), so check
+    // membership before spending the Claude calls; RLS only rejects at the save.
+    const { data: member } = await db.from("memberships").select("org_id")
+      .eq("org_id", ORG.olmo).eq("user_id", data.user.id).maybeSingle();
+    if (!member) return json(403, { error: "Tu cuenta no pertenece a Olmo." });
   } else {
+    if (email.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return json(400, { error: "Escribe un correo válido para usar la demo." });
+    }
     db = createClient(url, serviceKey);
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "sin-ip";
     const ua = req.headers.get("user-agent") ?? "";
     const hash = await sha256(`${ip}|${ua}`);
-    const { data: allowed, error } = await db.rpc("demo_generation_allowed", { p_client_hash: hash });
+    const { data: allowed, error } = await db.rpc("demo_generation_allowed", { p_client_hash: hash, p_email: email, p_consent: consent });
     if (error) return json(500, { error: "No se pudo verificar el límite de la demo." });
-    if (!allowed) return json(429, { error: "La demo permite 3 cotizaciones por día. Explora las cotizaciones de ejemplo mientras tanto." });
+    if (!allowed) return json(429, { error: "Llegaste al límite de la demo por hoy (3 cotizaciones por correo). Explora las cotizaciones de ejemplo mientras tanto." });
   }
 
   // ── Claude: free text → validated structure ─────────────
@@ -94,7 +106,6 @@ Deno.serve(async (req) => {
         messages: [{ role: "user", content: userMessage({ client_name, prepared_for, language, currency, source_text, part }) }],
         output_config: { format: zodOutputFormat(schema) },
         // If a safety classifier declines, the API retries on the recommended model.
-        // @ts-expect-error: `fallbacks: "default"` is not in the SDK types yet
         fallbacks: "default",
       },
       { headers: { "anthropic-beta": "server-side-fallback-2026-07-01" } },
@@ -124,10 +135,16 @@ Deno.serve(async (req) => {
       console.error("anthropic", err.status, err.message);
       return json(502, { error: "No se pudo generar la propuesta. Intenta de nuevo." });
     }
+    // messages.parse throws (not APIError) when the JSON is cut off, e.g. at max_tokens.
+    if (err instanceof Anthropic.AnthropicError) {
+      console.error("anthropic parse", err.message);
+      return json(502, { error: "La propuesta quedó incompleta. Intenta de nuevo." });
+    }
     console.error("generate-quote", err);
     return json(500, { error: "Error inesperado al generar la cotización." });
   }
 
+  normalizeMilestones(draft);
   const problems = businessErrors(draft);
   if (problems.length) return json(422, { error: "La cotización generada no es consistente.", details: problems, draft });
 
@@ -152,7 +169,7 @@ Deno.serve(async (req) => {
   });
   if (saveError) {
     console.error("create_quote", saveError.message);
-    return json(mode === "olmo" ? 403 : 500, { error: "No se pudo guardar la cotización." });
+    return json(500, { error: "No se pudo guardar la cotización. Intenta de nuevo." });
   }
 
   return json(200, created);

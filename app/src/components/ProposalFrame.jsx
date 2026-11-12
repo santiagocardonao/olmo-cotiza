@@ -16,7 +16,7 @@ export const ProposalFrame = forwardRef(function ProposalFrame({ data, title }, 
   const html = useMemo(() => `<!doctype html>
 <html lang="${data.quote.language ?? "es"}"><head><meta charset="utf-8">
 <title>${(title ?? "Propuesta").replace(/</g, "")}</title>
-<link rel="stylesheet" href="${location.origin}/proposal/proposal.css">
+<link rel="stylesheet" href="${location.origin}/proposal/proposal.css?v=${__PROPOSAL_VERSION__}">
 <style>@media screen { body { padding: 32px 0; } }</style>
 </head><body>${renderProposal(data)}
 <script>

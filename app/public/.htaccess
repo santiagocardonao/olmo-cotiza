@@ -8,14 +8,22 @@ RewriteCond %{HTTPS} !=on
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# Missing files under /assets/ or /proposal/ are real 404s, not the app
+# (a stale tab would otherwise get HTML for a JS module).
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/(assets|proposal)/
 RewriteRule ^ index.html [L]
 
 <IfModule mod_headers.c>
-  <FilesMatch "\.(woff2|ttf|js|css)$">
+  # Only Vite's hashed files in /assets/ are immutable. /proposal/ keeps
+  # stable names (synced from templates/), so it must revalidate.
+  <If "%{REQUEST_URI} =~ m#^/assets/#">
     Header set Cache-Control "public, max-age=31536000, immutable"
-  </FilesMatch>
+  </If>
+  <If "%{REQUEST_URI} =~ m#^/proposal/#">
+    Header set Cache-Control "no-cache"
+  </If>
   <FilesMatch "index\.html$">
     Header set Cache-Control "no-cache"
   </FilesMatch>

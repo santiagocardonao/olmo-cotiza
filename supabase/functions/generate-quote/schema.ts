@@ -66,6 +66,7 @@ export function businessErrors(d: QuoteDraft): string[] {
   if (!d.options.length) errors.push("La cotización no tiene opciones.");
   if (d.options.filter((o) => o.is_recommended).length > 1) errors.push("Hay más de una opción recomendada.");
   d.options.forEach((o, i) => {
+    if (!o.lines.length) errors.push(`La opción ${i + 1} (${o.name}) no tiene precios. Escribe al menos un precio para cada opción.`);
     o.lines.forEach((l, j) => {
       const where = `Opción ${i + 1}, línea ${j + 1} (${l.label})`;
       if (l.pricing_model === "percentage") {
@@ -83,7 +84,21 @@ export function businessErrors(d: QuoteDraft): string[] {
     });
   });
   if (d.copy.process.length < 3 || d.copy.process.length > 8) errors.push(`El proceso tiene ${d.copy.process.length} pasos; deben ser entre 3 y 8.`);
-  const sum = d.milestones.reduce((s, m) => s + m.percent, 0);
-  if (d.milestones.length && Math.abs(sum - 100) > 0.01) errors.push(`Los hitos de pago suman ${sum}%, no 100%.`);
+  // payment_milestones.percent has check (percent > 0 and percent <= 100)
+  if (d.milestones.some((m) => !(m.percent > 0 && m.percent <= 100))) errors.push("Cada hito de pago debe estar entre 0% y 100%.");
+  // Checked on the stored values (numeric(5,2)), as create_quote() does.
+  const sum = Math.round(d.milestones.reduce((s, m) => s + m.percent, 0) * 100) / 100;
+  if (d.milestones.length && sum !== 100) errors.push(`Los hitos de pago suman ${sum}%, no 100%.`);
   return errors;
+}
+
+// Percentages are stored with 2 decimals. Thirds (33.333 × 3) would be
+// saved as 99.99, so round each one and give the remainder to the last.
+export function normalizeMilestones(d: QuoteDraft) {
+  if (!d.milestones.length) return;
+  const raw = d.milestones.reduce((s, m) => s + m.percent, 0);
+  if (Math.abs(raw - 100) > 0.05) return; // a real mismatch: businessErrors reports it
+  d.milestones.forEach((m) => { m.percent = Math.round(m.percent * 100) / 100; });
+  const head = d.milestones.slice(0, -1).reduce((s, m) => s + m.percent, 0);
+  d.milestones[d.milestones.length - 1].percent = Math.round((100 - head) * 100) / 100;
 }

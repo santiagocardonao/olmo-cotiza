@@ -5,12 +5,13 @@ export function Shell({ mode, session, children }) {
   const base = mode === "demo" ? "/demo" : "/app";
   return (
     <div className="shell">
+      <a className="skip-link" href="#contenido">Saltar al contenido</a>
       <header className="topbar">
         <Link to={base} className="brand">
           <span className="wordmark">olmo</span>
           <span className="brand__product">Cotiza{mode === "demo" && <span className="demo-flag">Demo</span>}</span>
         </Link>
-        <nav className="topbar__nav">
+        <nav className="topbar__nav" aria-label="Principal">
           <NavLink to={base} end>Cotizaciones</NavLink>
           <NavLink to={`${base}/nueva`} className="btn btn--primary btn--sm">Nueva cotización</NavLink>
           {mode === "olmo" && session && (
@@ -20,10 +21,10 @@ export function Shell({ mode, session, children }) {
       </header>
       {mode === "demo" && (
         <div className="demo-banner">
-          Estás en la demo pública: todos los clientes y precios son ficticios. Las cotizaciones reales de Olmo están en un espacio privado que esta vista no puede ver.
+          Estás en la demo pública. Los clientes y precios son ficticios, y lo que crean los visitantes se borra a los 7 días. Las cotizaciones reales de Olmo están en un espacio privado que esta vista no puede ver.
         </div>
       )}
-      <main className="page-body">{children}</main>
+      <main className="page-body" id="contenido" tabIndex={-1}>{children}</main>
     </div>
   );
 }

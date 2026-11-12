@@ -51,7 +51,7 @@ app/                   Vite + React: dashboard, new quote, detail, client view
 ## Security
 
 - RLS on every table. RLS helper functions live in the `private` schema, outside the API.
-- The demo is read-only for visitors; its writes go through the Edge Function with a daily limit (3 per visitor, 40 in total).
+- The demo is read-only for visitors; its writes go through the Edge Function, which asks for an email and applies daily limits (3 per email, 3 per visitor, 40 in total). Visitor quotes are deleted after 7 days, and the five sample quotes get dates relative to today every night (pg_cron).
 - `get_public_quote(slug)` is public on purpose: each real quote's slug is random (72 bits), and Olmo drafts are never exposed.
 - The owner becomes `owner` of the Olmo organization automatically on signing up with their email.
 

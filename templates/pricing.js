@@ -20,18 +20,18 @@ export function linePrice(lang, line) {
         price: `${p} / ${t(lang, "perHour")}`,
         detail: line.quantity == null
           ? t(lang, "onDemand")
-          : t(lang, "hoursEstimated", num(line.quantity), line.cap_quantity ? num(line.cap_quantity) : null),
+          : t(lang, "hoursEstimated", num(lang, line.quantity), line.cap_quantity ? num(lang, line.cap_quantity) : null),
       };
     case "monthly":
-      return { price: `${p} / ${t(lang, "perMonth")}`, detail: line.quantity ? t(lang, "minMonths", num(line.quantity)) : null };
+      return { price: `${p} / ${t(lang, "perMonth")}`, detail: line.quantity ? t(lang, "minMonths", num(lang, line.quantity)) : null };
     case "per_unit":
       return {
         price: `${p} / ${t(lang, "perUnit")}`,
-        detail: line.quantity ? t(lang, "units", num(line.quantity)) : null,
+        detail: line.quantity ? t(lang, "units", num(lang, line.quantity)) : null,
       };
     case "percentage": {
       const min = line.minimum_amount ? ` · ${t(lang, "minimum")} ${money(line.minimum_amount, line.currency)}` : "";
-      return { price: `${num(line.percent)}% ${t(lang, "ofBase")} ${line.percent_base}`, detail: min ? min.slice(3) : null };
+      return { price: `${num(lang, line.percent)}% ${t(lang, "ofBase")} ${line.percent_base}`, detail: min ? min.slice(3) : null };
     }
     case "pass_through":
       return { price: `${p} / ${t(lang, "perMonth")}`, detail: t(lang, "paidToProvider") };
@@ -71,7 +71,8 @@ export function optionHeadline(lang, option) {
   const one = summarize(oneTimeAmount);
   if (one) {
     const hourly = lines.some((l) => l.pricing_model === "hourly" && l.quantity != null);
-    return { ...one, suffix: t(lang, hourly ? "estimatedCap" : one.hasRange ? "estimatedRange" : "oneTime") };
+    const capped = lines.some((l) => l.pricing_model === "hourly" && l.quantity != null && l.cap_quantity != null);
+    return { ...one, suffix: t(lang, capped ? "estimatedCap" : hourly ? "estimatedHours" : one.hasRange ? "estimatedRange" : "oneTime") };
   }
   const mon = summarize((l, price) => (l.pricing_model === "monthly" ? Number(price) : 0));
   if (mon) return { ...mon, suffix: t(lang, "monthly") };
@@ -91,7 +92,8 @@ export function passThroughCosts(options) {
   return [...seen.values()];
 }
 
-function num(n) {
+function num(lang, n) {
   const v = Number(n);
-  return Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0+$/, "");
+  const s = Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0+$/, "");
+  return lang === "en" ? s : s.replace(".", ",");
 }

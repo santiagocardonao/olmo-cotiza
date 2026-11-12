@@ -2,45 +2,54 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ProposalFrame } from "../components/ProposalFrame.jsx";
 import { StatusPill } from "../components/Layout.jsx";
-import { formatDate, getQuote, setStatus } from "../lib/quotes.js";
+import { formatDate, getQuote, proposalTitle, setStatus } from "../lib/quotes.js";
 
 export function QuoteDetail({ mode }) {
   const { slug } = useParams();
   const [data, setData] = useState(undefined);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
+  const [status, setLocalStatus] = useState(null); // after a change; avoids re-rendering the proposal
+  const [statusError, setStatusError] = useState(null);
   const frame = useRef(null);
   const base = mode === "demo" ? "/demo" : "/app";
 
-  useEffect(() => { getQuote(slug).then(setData).catch((e) => setError(e.message)); }, [slug]);
+  useEffect(() => {
+    getQuote(slug, { countView: false }).then(setData).catch((e) => setError(e.message));
+  }, [slug]);
 
-  if (error) return <p className="error">{error}</p>;
-  if (data === undefined) return <p className="muted">Cargando…</p>;
-  if (data === null) return <p className="error">No existe esta cotización o no tienes acceso.</p>;
+  if (error) return <Problem base={base}>No se pudo cargar la cotización. Revisa tu conexión e intenta de nuevo.</Problem>;
+  if (data === undefined) return <DetailSkeleton />;
+  if (data === null) return <Problem base={base}>Esta cotización no existe o no tienes acceso a ella.</Problem>;
 
-  const q = data.quote;
+  const q = { ...data.quote, status: status ?? data.quote.status };
   const publicUrl = `${location.origin}/p/${q.public_slug}`;
-  const title = `Propuesta Olmo · ${data.client?.name ?? ""}`;
+  const title = proposalTitle(data);
 
   async function copyLink() {
-    await navigator.clipboard.writeText(publicUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      window.prompt("Copia el enlace:", publicUrl);
+    }
   }
 
-  async function changeStatus(status) {
+  async function changeStatus(next) {
+    setStatusError(null);
     try {
-      await setStatus(q.id, status);
-      setData({ ...data, quote: { ...q, status } });
+      await setStatus(q.id, next);
+      setLocalStatus(next);
     } catch (e) {
-      setError(e.message);
+      setStatusError(e.message);
     }
   }
 
   return (
     <div className="detail">
       <aside className="detail__side">
-        <Link to={base} className="muted small">← Cotizaciones</Link>
+        <Link to={base} className="back-link">← Cotizaciones</Link>
         <h1 className="h2">{data.client?.name}</h1>
         <p className="muted">{q.title} {q.title_accent}</p>
         <StatusPill status={q.status} />
@@ -54,7 +63,7 @@ export function QuoteDetail({ mode }) {
 
         <div className="stack">
           <button className="btn btn--primary" onClick={() => frame.current?.print()}>Descargar PDF</button>
-          <button className="btn btn--ghost" onClick={copyLink}>{copied ? "✓ Enlace copiado" : "Copiar enlace para el cliente"}</button>
+          <button className="btn btn--ghost" onClick={copyLink} aria-live="polite">{copied ? "✓ Enlace copiado" : "Copiar enlace para el cliente"}</button>
           <a className="btn btn--ghost" href={publicUrl} target="_blank" rel="noreferrer">Abrir vista del cliente</a>
         </div>
 
@@ -63,11 +72,12 @@ export function QuoteDetail({ mode }) {
             <span className="label">Cambiar estado</span>
             <div className="segmented segmented--wrap">
               {["draft", "sent", "accepted", "rejected"].map((s) => (
-                <button key={s} className={q.status === s ? "on" : ""} onClick={() => changeStatus(s)}>
+                <button key={s} className={q.status === s ? "on" : ""} aria-pressed={q.status === s} onClick={() => changeStatus(s)}>
                   {{ draft: "Borrador", sent: "Enviada", accepted: "Aceptada", rejected: "Rechazada" }[s]}
                 </button>
               ))}
             </div>
+            {statusError && <p className="error small">{statusError}</p>}
           </div>
         )}
         <p className="muted small">"Descargar PDF" abre el diálogo de impresión: elige "Guardar como PDF". El PDF sale con texto real, no imágenes.</p>
@@ -76,6 +86,29 @@ export function QuoteDetail({ mode }) {
       <div className="detail__doc">
         <ProposalFrame ref={frame} data={data} title={title} />
       </div>
+    </div>
+  );
+}
+
+function Problem({ base, children }) {
+  return (
+    <div className="card empty">
+      <h3>{children}</h3>
+      <Link to={base} className="btn btn--ghost">Volver a cotizaciones</Link>
+    </div>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="detail" aria-busy="true" aria-label="Cargando cotización">
+      <div className="detail__side">
+        <div className="skeleton skeleton--line skeleton--short" />
+        <div className="skeleton skeleton--title" />
+        <div className="skeleton skeleton--line" />
+        <div className="skeleton skeleton--block" />
+      </div>
+      <div className="skeleton skeleton--sheet" />
     </div>
   );
 }

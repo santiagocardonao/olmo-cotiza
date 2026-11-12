@@ -52,8 +52,9 @@ export function metrics(quotes) {
   const decided = quotes.filter((q) => ["accepted", "rejected", "expired"].includes(q.status));
   const accepted = quotes.filter((q) => q.status === "accepted");
   const acceptedCop = accepted.filter((q) => q.value?.currency === "COP" && !q.value.recurring);
-  const today = new Date().toISOString().slice(0, 10);
-  const soon = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10);
+  // Local dates (YYYY-MM-DD): toISOString() is UTC and runs a day ahead in Colombia after 7 p.m.
+  const today = new Date().toLocaleDateString("en-CA");
+  const soon = new Date(Date.now() + 5 * 864e5).toLocaleDateString("en-CA");
   const pipeline = quotes.filter((q) => q.status === "sent" && q.value?.currency === "COP" && !q.value.recurring);
   return {
     total: quotes.length,
@@ -65,8 +66,10 @@ export function metrics(quotes) {
   };
 }
 
-export async function getQuote(slug) {
-  const { data, error } = await supabase.rpc("get_public_quote", { slug });
+// countView: false for the internal detail page, so browsing the demo
+// does not count as a client opening the link.
+export async function getQuote(slug, { countView = true } = {}) {
+  const { data, error } = await supabase.rpc("get_public_quote", { slug, count_view: countView });
   if (error) throw error;
   return data;
 }
@@ -75,7 +78,8 @@ export async function setStatus(quoteId, status) {
   const { error } = await supabase.from("quotes").update({ status }).eq("id", quoteId);
   if (error) throw error;
   if (["sent", "accepted", "rejected"].includes(status)) {
-    await supabase.from("quote_events").insert({ quote_id: quoteId, type: status });
+    const { error: eventError } = await supabase.from("quote_events").insert({ quote_id: quoteId, type: status });
+    if (eventError) throw new Error("El estado cambió, pero no se registró en el historial. Intenta de nuevo.");
   }
 }
 
@@ -103,8 +107,14 @@ export function formatMoney(amount, currency) {
   return `${Number(amount).toLocaleString("en-US", { maximumFractionDigits: 2 })} ${currency}`;
 }
 
-export function formatDate(iso) {
+export function formatDate(iso, lang = "es") {
   if (!iso) return "—";
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+  return new Date(y, m - 1, d).toLocaleDateString(lang === "en" ? "en-US" : "es-CO", { day: "numeric", month: "short" });
+}
+
+// Window title; also the default file name when the proposal is saved as PDF.
+export function proposalTitle(data) {
+  const client = data.client?.name ?? "";
+  return data.quote?.language === "en" ? `Olmo proposal · ${client}` : `Propuesta Olmo · ${client}`;
 }

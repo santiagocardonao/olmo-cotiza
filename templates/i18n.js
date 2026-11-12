@@ -33,7 +33,7 @@ const STRINGS = {
     perMonth: "mes",
     perUnit: "unidad",
     hoursEstimated: (q, cap) => cap ? `${q} h estimadas · máximo ${cap} h` : `${q} h estimadas`,
-    units: (q) => `${q} unidades`,
+    units: (q) => `${q} ${q === "1" ? "unidad" : "unidades"}`,
     onDemand: "según lo que pidas, se factura al ejecutarse",
     minMonths: (m) => `compromiso mínimo de ${m} ${m === "1" ? "mes" : "meses"}`,
     ofBase: "de",
@@ -48,7 +48,10 @@ const STRINGS = {
     conditionsAccent: "pequeña.",
     examplesTitle: "Ejemplos",
     paymentMethods: "Medios de pago",
+    paymentMethodsList: "Transferencia Bancolombia · Llaves Bre-B · Cuenta en EE. UU. · USDT · PayPal · Tarjeta",
+    footer: "Olmo © 2026 · Creado por Santiago Cardona Ortiz · olmo.agency",
     estimatedCap: "estimado según horas, con techo",
+    estimatedHours: "estimado según horas",
     monthly: "al mes",
     months: ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
     longDate: (d, m, y) => `${d} de ${m} de ${y}`,
@@ -85,7 +88,7 @@ const STRINGS = {
     perMonth: "month",
     perUnit: "unit",
     hoursEstimated: (q, cap) => cap ? `${q} h estimated · ${cap} h cap` : `${q} h estimated`,
-    units: (q) => `${q} units`,
+    units: (q) => `${q} ${q === "1" ? "unit" : "units"}`,
     onDemand: "on demand, billed once delivered",
     minMonths: (m) => `${m}-month minimum commitment`,
     ofBase: "of",
@@ -100,7 +103,10 @@ const STRINGS = {
     conditionsAccent: "print.",
     examplesTitle: "Examples",
     paymentMethods: "Payment methods",
+    paymentMethodsList: "Bancolombia transfer · Bre-B keys · US bank account · USDT · PayPal · Card",
+    footer: "Olmo © 2026 · Created by Santiago Cardona Ortiz · olmo.agency",
     estimatedCap: "estimate based on hours, capped",
+    estimatedHours: "estimate based on hours",
     monthly: "per month",
     months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
     longDate: (d, m, y) => `${m} ${d}, ${y}`,
@@ -127,9 +133,9 @@ export function longDate(lang, iso) {
   return t(lang, "longDate", d, t(lang, "months")[m - 1], y);
 }
 
-// COP and EUR without decimals, with a dot as thousands separator; USD with decimals only when present.
+// COP without decimals, with a dot as thousands separator; USD and EUR with decimals only when present.
 export function money(amount, currency) {
-  const n = Number(amount);
+  const n = Math.round(Number(amount) * 100) / 100; // drops float noise (19.99 * 100 = 1998.9999…)
   if (currency === "COP") return `$${n.toLocaleString("es-CO", { maximumFractionDigits: 0 })} COP`;
   const opts = { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 };
   return `${n.toLocaleString("en-US", opts)} ${currency}`;

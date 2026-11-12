@@ -6,4 +6,5 @@ cd "$(dirname "$0")/.."
 : "${SG_USER:?Set SG_USER in app/.env.deploy}"
 : "${SG_HOST:?Set SG_HOST in app/.env.deploy}"
 npm run build
-rsync -avz --delete -e "ssh -i ${SG_KEY:-$HOME/.ssh/siteground_olmo} -o IdentitiesOnly=yes -p ${SG_PORT:-18765}" dist/ "$SG_USER@$SG_HOST:www/cotiza.olmo.agency/public_html/"
+# --delete mirrors dist/, but never touch .well-known/ (SSL certificate validation).
+rsync -avz --delete --exclude=".well-known/" -e "ssh -i ${SG_KEY:-$HOME/.ssh/siteground_olmo} -o IdentitiesOnly=yes -p ${SG_PORT:-18765}" dist/ "$SG_USER@$SG_HOST:www/cotiza.olmo.agency/public_html/"

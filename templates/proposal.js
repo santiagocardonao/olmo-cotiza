@@ -12,8 +12,6 @@ import { linePrice, optionHeadline, passThroughCosts } from "./pricing.js";
 const OLMO = {
   email: "hola@olmo.agency",
   whatsapp: "+57 319 332 6821",
-  footer: "Olmo © 2026 · Creado por Santiago Cardona Ortiz · olmo.agency",
-  paymentMethods: "Transferencia Bancolombia · Llaves Bre-B · Cuenta en EE. UU. · USDT · PayPal · Tarjeta",
 };
 
 export function renderProposal(data) {
@@ -25,7 +23,7 @@ export function renderProposal(data) {
   const inner = [
     copy.intro && introPage(lang, copy),
     copy.diagnosis && diagnosisPage(lang, copy.diagnosis),
-    (copy.includes?.length || copy.excludes?.length) && scopePage(lang, copy),
+    ...(copy.includes?.length || copy.excludes?.length ? scopePages(lang, copy) : []),
     ...(options.length ? investmentPages(lang, options, milestones, copy.examples) : []),
     copy.process?.length && processPage(lang, copy),
     copy.conditions?.length && conditionsPage(lang, copy.conditions),
@@ -100,48 +98,106 @@ function conditionsPage(lang, conditions) {
 }
 
 // ── Scope ──────────────────────────────────────────────────
-function scopePage(lang, copy) {
+// Long lists continue on another page instead of being clipped by the sheet.
+const SCOPE_HEIGHT = 740;       // room for the include/exclude lists on one page
+const rowsOf = (s, chars) => Math.max(1, Math.ceil(String(s ?? "").length / chars));
+
+function scopePages(lang, copy) {
+  const chunk = (items) => {
+    const out = [[]];
+    let used = 0;
+    for (const item of items) {
+      const h = 15 + 20 * rowsOf(item, 30);
+      if (used + h > SCOPE_HEIGHT && out.at(-1).length) { out.push([]); used = 0; }
+      out.at(-1).push(item);
+      used += h;
+    }
+    return { out, used };
+  };
+  const inc = chunk(copy.includes ?? []), exc = chunk(copy.excludes ?? []);
+  const count = Math.max(inc.out.length, exc.out.length);
+  const lastUsed = Math.max(inc.out.length === count ? inc.used : 0, exc.out.length === count ? exc.used : 0);
+  const notesHeight = 100 + (copy.notes ?? []).reduce((s, n) => s + 6 + 20 * rowsOf(n, 85), 0);
+  const notesApart = copy.notes?.length && lastUsed + notesHeight > SCOPE_HEIGHT;
+
   const list = (items, kind) => `<ul class="checklist checklist--${kind}">${items.map((i) => `<li>${e(i)}</li>`).join("")}</ul>`;
-  return `
-  ${pill(t(lang, "scopePill"))}
-  ${heading(t(lang, "scopeHeading"), t(lang, "scopeAccent"))}
-  <div class="grid grid--2">
-    <div class="card">
-      <div class="label label--muted">${t(lang, "includes")}</div>
-      ${list(copy.includes ?? [], "in")}
-    </div>
-    <div class="card">
-      <div class="label label--muted">${t(lang, "excludes")}</div>
-      ${list(copy.excludes ?? [], "out")}
-    </div>
-  </div>
-  ${copy.notes?.length ? `
+  const notes = copy.notes?.length ? `
   <div class="card card--inset">
     <div class="label label--muted">${t(lang, "goodToKnow")}</div>
     <ul class="notes">${copy.notes.map((n) => `<li>${e(n)}</li>`).join("")}</ul>
-  </div>` : ""}`;
+  </div>` : "";
+  const pages = Array.from({ length: count }, (_, i) => `
+  ${pill(t(lang, "scopePill"))}
+  ${i === 0 ? heading(t(lang, "scopeHeading"), t(lang, "scopeAccent")) : ""}
+  <div class="grid grid--2">
+    <div class="card">
+      <div class="label label--muted">${t(lang, "includes")}</div>
+      ${list(inc.out[i] ?? [], "in")}
+    </div>
+    <div class="card">
+      <div class="label label--muted">${t(lang, "excludes")}</div>
+      ${list(exc.out[i] ?? [], "out")}
+    </div>
+  </div>
+  ${i === count - 1 && !notesApart ? notes : ""}`);
+  if (notesApart) pages.push(`
+  ${pill(t(lang, "scopePill"))}
+  ${notes}`);
+  return pages;
 }
 
 // ── Investment ────────────────────────────────────────────────
 // A4 sheets have a fixed height, so the layout is decided before
 // rendering, using an estimated height per card (in screen px).
 const BODY_HEIGHT = 780;        // usable height of an inner page below the title
-const CARD_BASE = 175;          // option card with no lines
-const CARD_LINE = 44;           // each line inside the card
-const TERMS_HEIGHT = 230;       // payment terms + third-party costs
+const CARD_BASE = 192;          // option card with no lines (compact: 165)
+const CARD_LINE = 44;           // each line inside the card (compact: 38)
 const GAP = 16;
 const TWO_COL_LINES = 12;       // more lines than this: the card splits them into 2 columns
+// Characters that fit on one text row of a card (Inter at the sizes in
+// proposal.css), by grid columns: [option name, line label, line price / description].
+const ROW_CHARS = { 1: [55, 90, 100], 2: [25, 40, 45], 3: [19, 28, 32] };
+const SPLIT_CHARS = [55, 42, 46]; // one card with its lines in 2 columns
+
+function cardHeight(lang, o, cols, compact) {
+  const lines = (o.lines ?? []).filter((l) => l.pricing_model !== "pass_through");
+  const split = cols === 1 && lines.length > TWO_COL_LINES;
+  const [nameChars, labelChars, textChars] = split ? SPLIT_CHARS : ROW_CHARS[cols];
+  const lineHeights = lines.map((l) => {
+    const p = linePrice(lang, l);
+    const label = l.label + (l.is_optional ? ` ${t(lang, "optional")}` : "");
+    return (compact ? 38 : CARD_LINE)
+      + (compact ? 15 : 16) * (rowsOf(label, labelChars) - 1)
+      + (compact ? 14 : 15) * (rowsOf(p.price + (p.detail ? ` · ${p.detail}` : ""), textChars) - 1);
+  });
+  const sum = lineHeights.reduce((s, h) => s + h, 0);
+  const head = optionHeadline(lang, o);
+  return (compact ? 165 : CARD_BASE)
+    + 22 * (rowsOf(o.name, nameChars) - 1)
+    + head.amounts.reduce((s, a) => s + (compact ? 25 : 33) * rowsOf(a, compact ? 16 : cols === 1 ? 40 : 20), 0)
+    - (head.amounts.length ? (compact ? 25 : 33) : 0)
+    + (head.alt ? 20 : 0)
+    + (split ? Math.ceil(sum / 2) + CARD_LINE : sum)
+    + (o.description ? 12 + 15 * rowsOf(o.description, textChars) : 0);
+}
 
 function investmentPages(lang, options, milestones, examples) {
-  const cols = options.length >= 3 ? 3 : options.length === 2 ? 2 : 1;
-  const lineCount = (o) => (o.lines ?? []).filter((l) => l.pricing_model !== "pass_through").length;
-  const visibleLines = (o) => (cols === 1 && lineCount(o) > TWO_COL_LINES ? Math.ceil(lineCount(o) / 2) : lineCount(o));
-
-  // Card rows and their estimated height
-  const rows = [];
-  for (let i = 0; i < options.length; i += cols) {
-    const row = options.slice(i, i + cols).map((o, j) => ({ o, index: i + j }));
-    rows.push({ row, height: CARD_BASE + CARD_LINE * Math.max(...row.map(({ o }) => visibleLines(o))) });
+  // Card rows and their estimated height. A row taller than the page
+  // switches to compact cards and, if still too tall, to fewer columns.
+  const layout = (cols, compact) => {
+    const out = [];
+    for (let i = 0; i < options.length; i += cols) {
+      const row = options.slice(i, i + cols).map((o, j) => ({ o, index: i + j }));
+      out.push({ row, height: Math.max(...row.map(({ o }) => cardHeight(lang, o, cols, compact || cols === 3))) });
+    }
+    return out;
+  };
+  let cols = options.length >= 3 ? 3 : options.length === 2 ? 2 : 1;
+  let rows = layout(cols, false);
+  const tall = rows.some((r) => r.height > BODY_HEIGHT);
+  if (tall) {
+    rows = layout(cols, true);
+    while (cols > 1 && rows.some((r) => r.height > BODY_HEIGHT)) rows = layout(--cols, true);
   }
 
   // Group rows into pages
@@ -159,15 +215,14 @@ function investmentPages(lang, options, milestones, examples) {
   pages.push(current);
 
   const terms = termsBlock(lang, options, milestones) + examplesBlock(lang, examples);
-  const termsHeight = TERMS_HEIGHT + (examples?.rows?.length ? 90 + 34 * examples.rows.length : 0);
+  const termsHeight = termsBlockHeight(options, milestones) + (examples?.rows?.length ? 120 + 34 * examples.rows.length : 0);
   const termsFit = terms && used + GAP + termsHeight <= BODY_HEIGHT;
-  const tall = rows.some((r) => r.height > BODY_HEIGHT);
 
   const out = pages.map((page, i) => `
   ${pill(t(lang, "investmentPill"))}
   ${i === 0 ? heading(t(lang, "investmentHeading"), t(lang, "investmentAccent")) : ""}
   <div class="grid grid--${cols}${cols === 3 || tall ? " options--compact" : ""}">
-    ${page.flatMap((r) => r.row).map(({ o, index }) => optionCard(lang, o, index, options.length)).join("")}
+    ${page.flatMap((r) => r.row).map(({ o, index }) => optionCard(lang, o, index, options.length, cols)).join("")}
   </div>
   ${i === pages.length - 1 && termsFit ? terms : ""}`);
 
@@ -178,6 +233,15 @@ function investmentPages(lang, options, milestones, examples) {
   ${terms}`);
   }
   return out;
+}
+
+// Payment terms and third-party costs sit side by side: the taller card sets the height.
+function termsBlockHeight(options, milestones) {
+  const rowsHeight = (labels) => labels.reduce((s, label) => s + 34 + 16 * (Math.ceil(String(label ?? "").length / 18 || 1) - 1), 0);
+  const third = passThroughCosts(options);
+  const payment = milestones.length ? 145 + (options.length > 1 ? 30 : 0) + rowsHeight(milestones.map((m) => m.label)) : 0;
+  const recurring = third.length ? 110 + rowsHeight(third.map((l) => l.label)) : 0;
+  return Math.max(payment, recurring);
 }
 
 function examplesBlock(lang, examples) {
@@ -200,17 +264,17 @@ function termsBlock(lang, options, milestones) {
     <div class="card">
       <div class="label label--muted">${t(lang, "paymentTerms")}</div>
       <dl class="rows">${milestones.map((m) => `
-        <div class="row"><dt>${e(m.label)}</dt><dd>${ref ? money(ref.amount * Number(m.percent) / 100, ref.currency) : `${Number(m.percent)}%`}</dd></div>`).join("")}
+        <div class="row"><dt>${e(m.label)}</dt><dd>${ref ? milestoneAmount(ref, m.percent) : `${Number(m.percent)}%`}</dd></div>`).join("")}
       </dl>
       ${ref && options.length > 1 ? `<p class="support support--small">${t(lang, "valuesFor")} ${e(ref.option.name)}.</p>` : ""}
-      <p class="support support--small"><strong>${t(lang, "paymentMethods")}:</strong> ${OLMO.paymentMethods}</p>
+      <p class="support support--small"><strong>${t(lang, "paymentMethods")}:</strong> ${t(lang, "paymentMethodsList")}</p>
     </div>` : "";
 
   const recurring = third.length ? `
     <div class="card">
       <div class="label label--muted">${t(lang, "recurring")}</div>
       <dl class="rows">${third.map((l) => `
-        <div class="row"><dt>${e(l.label)}</dt><dd>${money(l.unit_price, l.currency)} / ${t(lang, "perMonth")}</dd></div>`).join("")}
+        <div class="row"><dt>${e(l.label)}</dt><dd>${e(linePrice(lang, l).price)}</dd></div>`).join("")}
       </dl>
       <p class="support support--small">${t(lang, "recurringNote")}</p>
     </div>` : "";
@@ -218,7 +282,7 @@ function termsBlock(lang, options, milestones) {
   return payment || recurring ? `<div class="grid grid--2">${payment}${recurring}</div>` : "";
 }
 
-function optionCard(lang, option, index, total) {
+function optionCard(lang, option, index, total, cols) {
   const head = optionHeadline(lang, option);
   const lines = (option.lines ?? []).filter((l) => l.pricing_model !== "pass_through");
   const badge = option.is_recommended
@@ -235,7 +299,7 @@ function optionCard(lang, option, index, total) {
     <div class="option__price">${head.amounts.map((a) => `<span>${e(a)}</span>`).join("")}</div>
     ${head.alt ? `<div class="option__alt">${t(lang, "or")} ${e(head.alt)}</div>` : ""}
     <div class="option__suffix">${e(head.suffix)}</div>` : ""}
-    <ul class="option__lines${total === 1 && lines.length > TWO_COL_LINES ? " option__lines--2col" : ""}">${lines.map((l) => {
+    <ul class="option__lines${cols === 1 && lines.length > TWO_COL_LINES ? " option__lines--2col" : ""}">${lines.map((l) => {
       const p = linePrice(lang, l);
       return `<li>
         <div class="option__line-label">${e(l.label)}${l.is_optional ? ` <span class="tag">${t(lang, "optional")}</span>` : ""}</div>
@@ -248,17 +312,27 @@ function optionCard(lang, option, index, total) {
 
 function firstOneTimeTotal(options) {
   const o = options.find((x) => x.is_recommended) ?? options[0];
-  let amount = 0, currency = null;
+  let amount = 0, amountMax = 0, currency = null;
   for (const l of o?.lines ?? []) {
     if (l.is_optional) continue;
-    const a = l.pricing_model === "fixed" ? Number(l.unit_price)
-      : (l.pricing_model === "hourly" || l.pricing_model === "per_unit") && l.quantity ? Number(l.unit_price) * Number(l.quantity) : 0;
+    const factor = l.pricing_model === "fixed" ? 1
+      : (l.pricing_model === "hourly" || l.pricing_model === "per_unit") && l.quantity ? Number(l.quantity) : 0;
+    const a = factor * Number(l.unit_price);
     if (!a) continue;
     if (currency && currency !== l.currency) return null; // mixed currencies: show percentages
     currency = l.currency;
     amount += a;
+    amountMax += factor * Number(l.unit_price_max ?? l.unit_price);
   }
-  return amount ? { amount, currency, option: o } : null;
+  return amount ? { amount, amountMax, currency, option: o } : null;
+}
+
+// A milestone's share of the total; with a price range, the share of each end.
+function milestoneAmount(ref, percent) {
+  const share = (total) => total * Number(percent) / 100;
+  return ref.amountMax > ref.amount
+    ? `${money(share(ref.amount), ref.currency).replace(` ${ref.currency}`, "")} – ${money(share(ref.amountMax), ref.currency)}`
+    : money(share(ref.amount), ref.currency);
 }
 
 // ── Process ──────────────────────────────────────────────────
@@ -300,7 +374,7 @@ function backCover(lang, quote, copy) {
     <p class="cover__validity">${e(t(lang, "validity", quote.valid_days, issued, expires))}</p>
   </div>
   <footer class="cover__foot">
-    <span>${e(OLMO.footer)}</span>
+    <span>${e(t(lang, "footer"))}</span>
     <span>${t(lang, "tagline")}</span>
   </footer>
 </section>`;

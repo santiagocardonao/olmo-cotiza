@@ -7,6 +7,7 @@ import { Dashboard } from "./pages/Dashboard.jsx";
 import { Home } from "./pages/Home.jsx";
 import { NewQuote } from "./pages/NewQuote.jsx";
 import { PublicQuote } from "./pages/PublicQuote.jsx";
+import { NotFound } from "./pages/NotFound.jsx";
 import { QuoteDetail } from "./pages/QuoteDetail.jsx";
 import "./styles.css";
 
@@ -27,7 +28,7 @@ function App() {
       <Route path="/demo/nueva" element={demo(<NewQuote mode="demo" />)} />
       <Route path="/demo/c/:slug" element={demo(<QuoteDetail mode="demo" />)} />
       <Route path="/p/:slug" element={<PublicQuote />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

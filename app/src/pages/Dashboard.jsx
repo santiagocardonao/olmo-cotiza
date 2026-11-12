@@ -6,14 +6,24 @@ import { formatDate, formatMoney, listQuotes, metrics } from "../lib/quotes.js";
 export function Dashboard({ mode }) {
   const [quotes, setQuotes] = useState(null);
   const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
   const base = mode === "demo" ? "/demo" : "/app";
 
   useEffect(() => {
-    listQuotes(mode).then(setQuotes).catch((e) => setError(e.message));
-  }, [mode]);
+    setError(null);
+    listQuotes(mode).then(setQuotes).catch(() => setError(true));
+  }, [mode, attempt]);
 
-  if (error) return <p className="error">No se pudieron cargar las cotizaciones: {error}</p>;
-  if (!quotes) return <p className="muted">Cargando…</p>;
+  if (error) {
+    return (
+      <div className="card empty" role="alert">
+        <h3>No se pudieron cargar las cotizaciones.</h3>
+        <p className="muted">Revisa tu conexión e intenta de nuevo.</p>
+        <button className="btn btn--ghost" onClick={() => setAttempt((n) => n + 1)}>Reintentar</button>
+      </div>
+    );
+  }
+  if (!quotes) return <DashboardSkeleton />;
 
   const m = metrics(quotes);
 
@@ -49,6 +59,7 @@ export function Dashboard({ mode }) {
       ) : (
         <div className="card table-card">
           <table className="table">
+            <caption className="sr-only">Cotizaciones</caption>
             <thead>
               <tr><th>Cliente</th><th>Propuesta</th><th className="num">Valor</th><th>Estado</th><th>Vence</th><th className="num">Vistas</th></tr>
             </thead>
@@ -68,6 +79,16 @@ export function Dashboard({ mode }) {
         </div>
       )}
     </>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Cargando cotizaciones">
+      <div className="page-head"><div className="skeleton skeleton--line skeleton--short" /><div className="skeleton skeleton--title" /></div>
+      <section className="stats">{[0, 1, 2, 3].map((i) => <div key={i} className="card stat"><div className="skeleton skeleton--block" /></div>)}</section>
+      <div className="card table-card">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="skeleton skeleton--row" />)}</div>
+    </div>
   );
 }
 

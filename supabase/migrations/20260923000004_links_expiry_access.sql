@@ -71,6 +71,12 @@ create table private.org_owners (
   email   text primary key,
   org_id  uuid not null references public.organizations(id) on delete cascade
 );
+-- The organizations also come from seed.sql; created here too so the
+-- migrations build a fresh database on their own (supabase db reset).
+insert into public.organizations (id, slug, name, is_demo) values
+  ('00000000-0000-4000-8000-00000000d000', 'demo', 'Olmo · Demo', true),
+  ('00000000-0000-4000-8000-00000000a000', 'olmo', 'Olmo', false)
+on conflict (id) do nothing;
 insert into private.org_owners values
   ('santiagocardonaortiz@gmail.com', '00000000-0000-4000-8000-00000000a000');
 

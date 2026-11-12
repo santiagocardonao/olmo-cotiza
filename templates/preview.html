@@ -12,6 +12,7 @@
     // Development preview: fetches a quote by its public link
     // (get_public_quote) and renders it in full.
     import { renderProposal } from "./proposal.js";
+    import { escapeHtml } from "./i18n.js";
 
     const SUPABASE_URL = "https://dxukpgcsodrbktkhcutk.supabase.co";
     const PUBLISHABLE_KEY = "sb_publishable_CEmVnMfD_9QBOXGWP99nmQ_fUrAcplJ";
@@ -26,7 +27,7 @@
 
     document.getElementById("doc").innerHTML = data
       ? renderProposal(data)
-      : `<p style="text-align:center">No existe la cotización “${slug}”.</p>`;
+      : `<p style="text-align:center">No existe la cotización “${escapeHtml(slug)}”.</p>`;
     document.title = data ? `Propuesta · ${data.client.name}` : "No encontrada";
   </script>
 </body>
