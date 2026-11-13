@@ -1,5 +1,7 @@
 # Olmo Cotiza
 
+[![CI](https://github.com/santiagocardonao/olmo-cotiza/actions/workflows/ci.yml/badge.svg)](https://github.com/santiagocardonao/olmo-cotiza/actions/workflows/ci.yml)
+
 A quote generator built on Supabase. You write the scope and the prices in free text; Claude turns them into structured data; the proposal is assembled from fixed templates of the Olmo design system and stored in Postgres, where it stays queryable: how much was quoted, to whom, what was opened and what was closed.
 
 **Live:** [cotiza.olmo.agency](https://cotiza.olmo.agency) · [public demo](https://cotiza.olmo.agency/demo) (fictional data)
@@ -65,3 +67,18 @@ npm run deploy   # build + rsync to SiteGround (cp .env.deploy.example .env.depl
 ```
 
 The Edge Function needs the `ANTHROPIC_API_KEY` secret in Supabase.
+
+## Tests
+
+The tests cover the rules that decide what reaches a client, with no network calls and no secrets:
+
+- `supabase/functions/tests/` (Deno): the business rules applied to Claude's output before `create_quote()` stores it: milestones that add up to 100, hours and caps on hourly pricing, price ranges, alternate currencies, percentage lines, and the Zod schema.
+- `app/src/lib/*.test.js` (Vitest): how the templates read each pricing model and add up an option, money formatting, and the dashboard figures (quote value, close rate, average ticket, open pipeline).
+
+```bash
+# from the repo root
+(cd app && npm test)                                          # Vitest
+deno test --node-modules-dir=none supabase/functions/tests/   # Deno
+```
+
+CI (GitHub Actions) runs both suites, typechecks the Edge Function and builds the app on every push and pull request to `main`.
